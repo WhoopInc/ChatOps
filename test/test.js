@@ -1,22 +1,43 @@
 var assert = require('chai').assert;
 var index = require('../index.js');
 var app = require('../app.js');
+var request = require('request');
+const https = require('https');
 
-describe('HTTPS Req', function() {
-    it('should return status code 200', function () {
-        var code = https.request(index.options, function(res){
-            return(res.statusCode);
+describe('HTTPS response', function () {
+    describe('', function () {
+        it('should return 200', function (done) {
+            https.get(index.options, function (res) {
+                assert.equal(200, res.statusCode);
+                done();
+            });
         });
-        assert.equal(200, code);
     });
 });
 
-describe('Data returned by HTTPS request', function () {
-    it('should include a WebSocket url', function () {
-        var url = JSON.parse(index.alldata).url;
-        var urlstring = JSON.stringify(url);
-        assert(urlstring !== '', 'Returned url is not empty.');
-        assert(url !== undefined, 'Returned url is not undefined.');
-    })
+describe('HTTPS response data', function () {
+    var alldata = '';
+    describe('', function () {
+        it('should contain a WebSocket url', function (done) {
+            https.get(index.options, function (res) {
+                res.on('data', function (data) {
+                    alldata = alldata + data.toString();
+                    console.log(alldata);
+                });
+
+                res.on('end', function () {
+                    var url = JSON.parse(alldata).url;
+                    var urlstring = JSON.stringify(url);
+
+                    assert(urlstring !== '', 'Returned url is not empty.');
+                    assert(url !== undefined, 'Returned url is not undefined.');
+                    done();
+                })
+
+            });
+        });
+    });
 });
+
+
 
