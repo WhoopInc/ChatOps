@@ -13,8 +13,10 @@
   "dependencies": {
     "@slack/client": "^3.2.0",
     "body-parser": "^1.x.x",
+    "chai": "*",
     "dotenv": "^1.2.0",
     "express": "^4.x.x",
+    "mocha": "*",
     "mongoose": "~3.8.20",
     "passport": "^0.2.2",
     "passport-local": "^1.0.0",
