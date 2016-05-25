@@ -1,7 +1,6 @@
 const https = require('https');
-const WebSocket = require('ws');
 require('dotenv').load();   // loads variables from .env to ENV
-
+var app = require('./app.js');
 
 // contents of HTTPS server request
 var options = {
@@ -11,51 +10,44 @@ var options = {
     method: 'GET'
 };
 
-// when request finished, open WebSocket and handle events
-var finishedRequest = function () {
-    var url = JSON.parse(alldata).url;
-    // var selfId = JSON.parse(alldata).self.id
-    // console.log(url);
+// collects data from HTTPS response
+function httpsResponse(res) {
+    console.log('statusCode: ', res.statusCode);
+    console.log('headers: ', res.headers);
 
-    var socket = new WebSocket(url);
-
-    // when socket opened, send message
-    var onOpen = socket.on('open', function() {
-        console.log('socket opened');
-        var msg = {
-            "id": 1,
-            "type": "message",
-            "channel": "C1BBWJ7PF",
-            "text": "WhoopBot connected to WebSocket"
-            // "id": selfId
-
-        };
-        socket.send(JSON.stringify(msg));
-
+    res.on('data', function (data) {
+        alldata = alldata + data.toString();
+        //console.log('end data callback');
     });
 
-    var onMessage = socket.on('message', function(event) {
-        ev = JSON.parse(event);
-        console.log(ev);
-    });
+    res.on('close', function() {
+        //console.log('end response callback');
+        app.fin(alldata);
 
-};
+    });
+}
 
 var alldata = '';
+
+// makes HTTPS request, collects data received
 var req = https.request(options, function(res) {
-        // console.log('statusCode: ', res.statusCode);
-        // console.log('headers: ', res.headers);
+    httpsResponse(res);
+});
 
-        res.on('data', function (data) {
-            alldata = alldata + data.toString();
-            // console.log('end data callback');
-        });
-
-        res.on('close', finishedRequest);
-        // console.log('end response callback');
-
-    });
-req.on('close',finishedRequest);
+req.on('close', function() {
+    //console.log('end request');
+    //console.log(alldata);
+    //console.log(exports.alldata);
+    app.fin(alldata);
+});
 
 req.end();
+
+module.exports = {
+    options: options,
+    httpsRes: httpsResponse,
+    request: req,
+    alldata: alldata
+};
+
 
