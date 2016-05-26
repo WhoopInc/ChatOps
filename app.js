@@ -11,7 +11,7 @@ function onOpen (soc) {
         "text": "WhoopBot connected to WebSocket"
     };
     
-    if (soc.readyState == 1) {
+    if (soc.readyState === WebSocket.OPEN) {
         soc.send(JSON.stringify(msg));
     };
 };
@@ -25,10 +25,10 @@ function onMessage (event) {
 
 
 // when HTTPS request finished, initialize WebSocket and handle events
-function finishedRequest(data) {
-    //console.log('running fin');
+function initializeWebSocket(data) {
+    //console.log('running init');
     //console.log(data);
-    //console.log('ran fin');
+    //console.log('ran init');
     var url = JSON.parse(data).url;
     //var selfId = JSON.parse(data).self.id
     // console.log(url);
@@ -41,13 +41,11 @@ function finishedRequest(data) {
     });
 
     // handle incoming messages
-    socket.on('message', function(event) {
-        onMessage(event);
-    });
+    socket.on('message', onMessage);
 
 };
 
 module.exports = {
-    fin: finishedRequest
+    initializeWebSocket: initializeWebSocket
 };
 

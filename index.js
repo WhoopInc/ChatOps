@@ -12,8 +12,8 @@ var options = {
 
 // collects data from HTTPS response
 function httpsResponse(res) {
-    console.log('statusCode: ', res.statusCode);
-    console.log('headers: ', res.headers);
+    // console.log('statusCode: ', res.statusCode);
+    // console.log('headers: ', res.headers);
 
     res.on('data', function (data) {
         alldata = alldata + data.toString();
@@ -22,10 +22,10 @@ function httpsResponse(res) {
 
     res.on('close', function() {
         //console.log('end response callback');
-        app.fin(alldata);
+        app.initializeWebSocket(alldata);
 
     });
-}
+};
 
 var alldata = '';
 
@@ -38,16 +38,14 @@ req.on('close', function() {
     //console.log('end request');
     //console.log(alldata);
     //console.log(exports.alldata);
-    app.fin(alldata);
+    app.initializeWebSocket(alldata);
 });
 
 req.end();
 
 module.exports = {
     options: options,
-    httpsRes: httpsResponse,
+    httpsResponse: httpsResponse,
     request: req,
     alldata: alldata
 };
-
-
