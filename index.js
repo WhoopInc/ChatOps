@@ -1,4 +1,4 @@
-const https = require('https');
+var https = require('https');
 require('dotenv').load();   // loads variables from .env to ENV
 var app = require('./app.js');
 
@@ -25,7 +25,7 @@ function httpsResponse(res) {
         app.initializeWebSocket(alldata);
 
     });
-};
+}
 
 var alldata = '';
 
