@@ -1,5 +1,9 @@
 # Dependency directory
-node_modules
+/node_modules
 
 # Environment variables
 .env
+
+/.idea
+
+.DS_Store
