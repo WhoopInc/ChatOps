@@ -1,58 +1,35 @@
 var WebSocket = require('ws');
 require('dotenv').load();
 
-// when socket opens, notify channel
-function onOpen (soc) {
-    console.log('socket opened');
-    var msg = {
-        "id": 1,
-        "type": "message",
-        "channel": "C1BBWJ7PF",
-        "text": "WhoopBot connected to WebSocket"
-    };
 
-    sendMessage(soc, msg);
-}
 
 function ignoreEvent (event) {
     if (event.username && event.username === "slackbot") {
         return true;
     }
+    
     if (!(event.type === "message" && event.user !== "U1ASA6B88" && !event.hidden)) {
         return true;
     }
+    
     return false;
 }
 
 
-// process incoming messages, return object with text, channel, user id
-function onEvent (event, soc) {
-    console.log(event);
-
-    var ev = JSON.parse(event);
-    var output;
-
-    // if event is a message NOT from self, package relevant info
-
-    if (!ignoreEvent(ev)){
-        output = {
-            type: ev.type,
-            user: ev.user,
-            channel: ev.channel,
-            text: ev.text
-        };
-
-        sendMessage(soc, handleHTTP (output));
+function sendMessage(soc, data) {
+    if (soc.readyState === WebSocket.OPEN && data) {
+        soc.send(JSON.stringify(data));
     }
-    
-    //var text = ev.text;
-    
 }
 
 
+// function genId () {
+
+// }
+
 
 function handleHTTP (data) {
-    console.log('start http, ', data);
+    // console.log('start http, ', data);
     var codes = ['100', '101', /* '102', */
                 '200', '201', '202', /* 203, */ '204', '205', '206', '207', /* '208', */ '226',
                 '300', '301', '302', '303', '304', '305', /* '306', */ '307', /* '308', */
@@ -82,23 +59,48 @@ function handleHTTP (data) {
                 "channel": data.channel,
                 "text": "https://http.cat/" + foundCodes[0]
             }
-            console.log('outgoing: ', outgoing);
+            // console.log('outgoing: ', outgoing);
             return outgoing;
             // break;
         }
     };
 }
 
-function sendMessage(soc, data) {
-    if (soc.readyState === WebSocket.OPEN && data) {
-        soc.send(JSON.stringify(data));
-        console.log('message sent');
-    }
+
+// when socket opens, notify channel
+function onOpen (soc) {
+    // console.log('socket opened');
+    var msg = {
+        "id": 1,
+        "type": "message",
+        "channel": "C1BBWJ7PF",
+        "text": "WhoopBot connected to WebSocket"
+    };
+
+    sendMessage(soc, msg);
 }
 
-// function genId () {
 
-// }
+// process incoming messages, return object with text, channel, user id
+function onEvent (event, soc) {
+    console.log(event);
+
+    var ev = JSON.parse(event);
+    var output;
+
+    // if event is a message NOT from self, package relevant info
+
+    if (!ignoreEvent(ev)){
+        output = {
+            type: ev.type,
+            user: ev.user,
+            channel: ev.channel,
+            text: ev.text
+        };
+
+        sendMessage(soc, handleHTTP (output));
+    }
+}
 
 
 // when HTTPS request finished, initialize WebSocket and handle events
@@ -124,7 +126,10 @@ function initializeWebSocket(data) {
 
 }
 
+
 module.exports = {
-    initializeWebSocket: initializeWebSocket
+    initializeWebSocket: initializeWebSocket,
+    handleHTTP: handleHTTP,
+    ignoreEvent: ignoreEvent
 };
 
