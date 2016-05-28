@@ -1,69 +1,36 @@
 var WebSocket = require('ws');
 require('dotenv').load();
-
-
+var https = require('https');
+var u = require('url');
+var httpcat = require('./httpcat.js');
+var github = require('./github.js');
+var httprequest = require('./httprequest.js');
 
 function ignoreEvent (event) {
     if (event.username && event.username === "slackbot") {
         return true;
     }
-    
-    if (!(event.type === "message" && event.user !== "U1ASA6B88" && !event.hidden)) {
+
+    if (!(event.type === "message" && event.user !== "U1ASA6B88" &&
+        !event.hidden)) {
         return true;
     }
-    
+
     return false;
 }
 
 
 function sendMessage(soc, data) {
     if (soc.readyState === WebSocket.OPEN && data) {
-        soc.send(JSON.stringify(data));
+        if (Array.isArray(data)) {
+            data.forEach(function(item) {
+                soc.send(JSON.stringify(item));
+            });
+        }
+        else {
+            soc.send(JSON.stringify(data));
+        }
     }
-}
-
-
-// function genId () {
-
-// }
-
-
-function handleHTTP (data) {
-    // console.log('start http, ', data);
-    var codes = ['100', '101', /* '102', */
-                '200', '201', '202', /* 203, */ '204', '205', '206', '207', /* '208', */ '226',
-                '300', '301', '302', '303', '304', '305', /* '306', */ '307', /* '308', */
-                '400', '401', '402', '403', '404', '405', '406', /* '407', */ '408', '409',
-                '410', '411', '412', '413', '414', '415', '416', '417', '418',
-                /* '421', */ '422', '423', '424', '425', '426', /* '428', */ '429',
-                '431', '444', '450', '451', /* '499', */
-                '500', /* '501', */ '502', '503', /* '504', '505', */ '506', '507', '508', '509', 
-                /* '510', '511',  */ '599'];
-
-    var contextClues = ['what', 'what\'s', '?', 'mean'];
-
-
-    var foundCodes = [];
-
-    codes.forEach(function (item) {
-        if (data.text.includes(item)) {
-            foundCodes.push(item);
-        }
-    });
-
-    for (var i = 0; i < contextClues.length; i++) {
-        if (data.text.includes(contextClues[i]) && foundCodes.length !== 0) {
-            var outgoing = {
-                "id": 2,
-                "type": "message",
-                "channel": data.channel,
-                "text": "https://http.cat/" + foundCodes[0]
-            }
-            // console.log('outgoing: ', outgoing);
-            return outgoing;
-            // break;
-        }
-    };
 }
 
 
@@ -78,6 +45,7 @@ function onOpen (soc) {
     };
 
     sendMessage(soc, msg);
+    sendMessage(soc, github.getRepos());
 }
 
 
@@ -86,11 +54,11 @@ function onEvent (event, soc) {
     console.log(event);
 
     var ev = JSON.parse(event);
-    var output;
+    var output = {};
 
     // if event is a message NOT from self, package relevant info
 
-    if (!ignoreEvent(ev)){
+    if (!ignoreEvent(ev)) {
         output = {
             type: ev.type,
             user: ev.user,
@@ -98,7 +66,8 @@ function onEvent (event, soc) {
             text: ev.text
         };
 
-        sendMessage(soc, handleHTTP (output));
+        sendMessage(soc, httpcat.handleHTTP(output));
+
     }
 }
 
@@ -108,11 +77,9 @@ function initializeWebSocket(data) {
     //console.log('running init');
     //console.log(data);
     //console.log('ran init');
-    var url = JSON.parse(data).url;
     //var selfId = JSON.parse(data).self.id
-    // console.log(url);
 
-    var socket = new WebSocket(url);
+    var socket = new WebSocket(data.url);
 
     // handle socket opening
     socket.on('open', function() {
@@ -129,7 +96,5 @@ function initializeWebSocket(data) {
 
 module.exports = {
     initializeWebSocket: initializeWebSocket,
-    handleHTTP: handleHTTP,
-    ignoreEvent: ignoreEvent
+    ignoreEvent: ignoreEvent,
 };
-
