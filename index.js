@@ -1,14 +1,14 @@
-var https = require('https');
+//var https = require('https');
 require('dotenv').load();   // loads variables from .env to ENV
 var app = require('./app.js');
-var httprequest = require('./httprequest.js');
+var core = require('./core.js');
 
 // contents of HTTPS server request
 var options = {
-    url: 'slack.com/api/rtm.start?token=' + process.env.SLACK_API_TOKEN,
+    url: 'slack.com/api/rtm.start?token=' + process.env.SLACK_API_TOKEN
 };
 
-httprequest.makeRequest(options, app.initializeWebSocket);
+core.makeRequest(options, app.initializeWebSocket);
 
 // // collects data from HTTPS response
 // function httpsResponse(res) {
@@ -45,7 +45,7 @@ httprequest.makeRequest(options, app.initializeWebSocket);
 
 
 module.exports = {
-    options: options,
+    options: options
     //httpsResponse: httpsResponse,
     //request: req,
     //alldata: alldata

@@ -1,38 +1,10 @@
 var WebSocket = require('ws');
 require('dotenv').load();
-var https = require('https');
-var u = require('url');
+//var https = require('https');
+//var u = require('url');
 var httpcat = require('./httpcat.js');
 var github = require('./github.js');
-var httprequest = require('./httprequest.js');
-
-function ignoreEvent (event) {
-    if (event.username && event.username === "slackbot") {
-        return true;
-    }
-
-    if (!(event.type === "message" && event.user !== "U1ASA6B88" &&
-        !event.hidden)) {
-        return true;
-    }
-
-    return false;
-}
-
-
-function sendMessage(soc, data) {
-    if (soc.readyState === WebSocket.OPEN && data) {
-        if (Array.isArray(data)) {
-            data.forEach(function(item) {
-                soc.send(JSON.stringify(item));
-            });
-        }
-        else {
-            soc.send(JSON.stringify(data));
-        }
-    }
-}
-
+var core = require('./core.js');
 
 // when socket opens, notify channel
 function onOpen (soc) {
@@ -44,8 +16,8 @@ function onOpen (soc) {
         "text": "WhoopBot connected to WebSocket"
     };
 
-    sendMessage(soc, msg);
-    sendMessage(soc, github.getRepos());
+    core.sendMessage(soc, msg);
+
 }
 
 
@@ -58,7 +30,7 @@ function onEvent (event, soc) {
 
     // if event is a message NOT from self, package relevant info
 
-    if (!ignoreEvent(ev)) {
+    if (!core.ignoreEvent(ev)) {
         output = {
             type: ev.type,
             user: ev.user,
@@ -66,7 +38,11 @@ function onEvent (event, soc) {
             text: ev.text
         };
 
-        sendMessage(soc, httpcat.handleHTTP(output));
+        if (ev.text === 'get github') {
+            github.getRepos(soc);
+        }
+
+        core.sendMessage(soc, httpcat.handleHTTP(output));
 
     }
 }
@@ -95,6 +71,5 @@ function initializeWebSocket(data) {
 
 
 module.exports = {
-    initializeWebSocket: initializeWebSocket,
-    ignoreEvent: ignoreEvent,
+    initializeWebSocket: initializeWebSocket
 };

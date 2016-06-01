@@ -44,4 +44,4 @@ function handleHTTP (data) {
 
 module.exports = {
     handleHTTP: handleHTTP
-}
+};
