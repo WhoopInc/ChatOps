@@ -1,17 +1,23 @@
 var core = require('./core.js');
+var mb = require('./messagebroker');
+var thirdparty = require('./thirdparty');
 
 
 // get repositories, output string of repo data
-function getRepos (soc) {
+function getRepos (callback) {
 
     var outputMessage = new Array();
     var options = {
         url: 'api.github.com/orgs/WhoopInc/repos'
     };
 
+    //console.log('point1');
+
     core.paginate(options, function (repoArray) {
         // initialize counter
         var traversedRepos = 0;
+
+        //console.log('point2');
 
         // traverse array of repos
         repoArray.forEach(function (repo, index) {
@@ -19,11 +25,15 @@ function getRepos (soc) {
             var urlOption = {url: 'api.github.com/repos/WhoopInc/' +
             repo.name + '/pulls'};
 
+            //console.log('point3');
+
             // get the pull requests for the repository
-            core.paginate(urlOption, function (prArray) {
+            core.makeRequest(urlOption, function (prArray) {
 
                 // increment counter inside asynchronous fun
                 traversedRepos++;
+
+                //console.log('point4');
 
                 // for each pull request per repository, delete if not open
                 prArray.forEach(function (pullrequest) {
@@ -58,8 +68,14 @@ function getRepos (soc) {
                     //         "text": "No open pull requests."
                     //     });
                     // }
-                    //console.log('FINAL MESSAGE: ', outputMessage);
-                    core.sendMessage(soc, outputMessage);
+                    console.log('FINAL MESSAGE: ', outputMessage);
+                    //core.sendMessage(soc, outputMessage);
+
+                    outputMessage.forEach(function (item) {
+                        callback(item);
+                    });
+
+                    outputMessage = [];
                 }
 
             });

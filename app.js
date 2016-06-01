@@ -5,10 +5,13 @@ require('dotenv').load();
 var httpcat = require('./httpcat.js');
 var github = require('./github.js');
 var core = require('./core.js');
+var mb = require('./messagebroker.js');
+
+var msgBroker;
 
 // when socket opens, notify channel
 function onOpen (soc) {
-    // console.log('socket opened');
+
     var msg = {
         "id": 1,
         "type": "message",
@@ -16,8 +19,18 @@ function onOpen (soc) {
         "text": "WhoopBot connected to WebSocket"
     };
 
-    core.sendMessage(soc, msg);
+    msgBroker = new mb.MessageBroker (soc);
 
+    msgBroker.init();
+
+    msgBroker.push(msg);
+
+    github.getRepos(msgBroker.push);
+
+}
+
+function helper (msg) {
+    msgBroker.push(msg);
 }
 
 
@@ -29,8 +42,8 @@ function onEvent (event, soc) {
     var output = {};
 
     // if event is a message NOT from self, package relevant info
+    if (!core.ignoreEvent(event)) {
 
-    if (!core.ignoreEvent(ev)) {
         output = {
             type: ev.type,
             user: ev.user,
@@ -38,22 +51,20 @@ function onEvent (event, soc) {
             text: ev.text
         };
 
-        if (ev.text === 'get github') {
-            github.getRepos(soc);
-        }
+        // if (ev.text === 'get github') {
+        //     console.log('called getRepos from app');
+        //     github.getRepos();
+        // }
 
-        core.sendMessage(soc, httpcat.handleHTTP(output));
+        msgBroker.push(httpcat.handleHTTP(output));
 
     }
-}
 
+
+}
 
 // when HTTPS request finished, initialize WebSocket and handle events
 function initializeWebSocket(data) {
-    //console.log('running init');
-    //console.log(data);
-    //console.log('ran init');
-    //var selfId = JSON.parse(data).self.id
 
     var socket = new WebSocket(data.url);
 
@@ -65,11 +76,16 @@ function initializeWebSocket(data) {
     // handle incoming messages
     socket.on('message', function(event) {
         onEvent(event, socket);
+
     });
 
 }
 
 
+
+
+
 module.exports = {
-    initializeWebSocket: initializeWebSocket
+    initializeWebSocket: initializeWebSocket,
+    helper: helper
 };

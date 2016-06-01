@@ -1,6 +1,7 @@
 var https = require('https');
 var u = require('url');
 var WebSocket = require('ws');
+var mb = require('./messagebroker');
 
 function makeRequest (object, callback, responseCB) {
     var accumulator = '';
@@ -15,7 +16,7 @@ function makeRequest (object, callback, responseCB) {
         method: object.method || 'GET'
     };
 
-    //console.log('PATH: ', options.path);
+    console.log('PATH: ', options.path);
 
     if (options.hostname === 'api.github.com') {
         options.auth = process.env.GITHUB_USERNAME + ':' + process.env.GITHUB_API_TOKEN;
@@ -41,6 +42,7 @@ function makeRequest (object, callback, responseCB) {
             if (responseCB) {
                 responseCB(res);
             }
+
         });
     });
 
@@ -50,6 +52,7 @@ function makeRequest (object, callback, responseCB) {
         if (responseCB) {
             responseCB(response);
         }
+
     });
 
     req.end();
@@ -61,14 +64,16 @@ function sendMessage(soc, data) {
         //console.log('data exist');
         if (Array.isArray(data)) {
             //console.log('sending array');
-            data.forEach(function(item) {
-                setTimeout(function () {
-                    soc.send(JSON.stringify(item));
-                    console.log('sent array term');
-                }, 1000);
 
-                //console.log('sent one term of array');
-            });
+            var val = data.pop();
+            setInterval(function () {
+                soc.send(JSON.stringify(val))
+            }, 1000);
+            for (var i = 0; i < data.length; i++) {
+                setTimeout(function () {
+                    soc.send(JSON.stringify(data[i]));
+                }, 1000);
+            }
         }
         else {
             soc.send(JSON.stringify(data));
@@ -76,7 +81,6 @@ function sendMessage(soc, data) {
         }
     }
 }
-
 
 
 function ignoreEvent (event) {
@@ -92,32 +96,41 @@ function ignoreEvent (event) {
     return false;
 }
 
+
+
 function paginate (options, callback) {
     makeRequest(options, callback, function(response) {
         var linkHeader = response.headers.link;
-        console.log('LINK HEADER: ', linkHeader);
+        //console.log('LINK HEADER: ', linkHeader);
 
         if (linkHeader) {
             // var totalPages = 0;
             // var constantUrl = '';
             var links = linkHeader.split(',');
-            var nextRegEx = new RegExp('^<(.*?page=)(\d*)>; rel="last"$');
+
+            for (var i = 0; i < links.length; i++) {
+                console.log('links[', i, ']: ', links[i]);
+            }
+            var nextRegEx = new RegExp('<https://(.*)page=(.+)>; rel="last"');
 
             // nothing that matches regexp. fix.
             for (var i = 0; i < links.length; i++) {
                 var matches = nextRegEx.exec(links[i]);
                 if (matches) {
-                    console.log('NO. PAGES MATCH: ', totalPages);
-                    console.log('CONSTANT URL MATCH: ', constantUrl);
+                    //console.log('WERE MATCHES');
+
                     var totalPages = matches[2];
                     var constantUrl = matches[1];
 
+                    //console.log('NO. PAGES MATCH: ', totalPages);
+                    //console.log('CONSTANT URL MATCH: ', constantUrl);
+
                     for (var i = 2; i <= totalPages; i++) {
                         var newOptions = {
-                            url: constantUrl + i.toString()
-                        }
+                            url: constantUrl + 'page=' + i.toString()
+                        };
 
-                        makeRequest(newOptions, callback, false);
+                        makeRequest(newOptions, callback);
                     }
 
                     break;
