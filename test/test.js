@@ -2,15 +2,9 @@ var assert = require('chai').assert;
 var index = require('../index.js');
 var app = require('../app.js');
 var httpcat = require('../httpcat.js');
+var core = require('../core.js');
 //var request = require('request');
 //var https = require('https');
-
-describe('example test', function () {
-    it('should be get', function (done) {
-        assert(index.options.method === 'GET');
-        done();
-    });
-});
 
 var testerEventObjects = [{type: "message",
                            user: "U1B225887",
@@ -45,27 +39,27 @@ var testerEventObjects = [{type: "message",
 // ignoreEvent tests
 describe('ignoreEvent', function () {
     it('should ignore username slackbot', function (done) {
-        assert(app.ignoreEvent(testerEventObjects[3]));
+        assert(core.ignoreEvent(testerEventObjects[3]));
         done();
     });
 
     it('should ignore type !== message', function (done) {
-        assert(app.ignoreEvent(testerEventObjects[6]));
+        assert(core.ignoreEvent(testerEventObjects[6]));
         done();
     });
 
     it('should ignore when user is whoop bot', function (done) {
-        assert(app.ignoreEvent(testerEventObjects[5]));
+        assert(core.ignoreEvent(testerEventObjects[5]));
         done();
     });
 
     it('should ignore hidden events', function (done) {
-        assert(app.ignoreEvent(testerEventObjects[4]));
+        assert(core.ignoreEvent(testerEventObjects[4]));
         done();
     });
 
     it('should not ignore correct events', function (done) {
-        assert(!app.ignoreEvent(testerEventObjects[0]));
+        assert(!core.ignoreEvent(testerEventObjects[0]));
         done();
     });
 });
