@@ -1,5 +1,5 @@
 function handleHTTP (data) {
-    // console.log('start http, ', data);
+
     var codes = ['100', '101', /* '102', */
                 '200', '201', '202', /* 203, */ '204', '205', '206', '207',
                 /* '208', */ '226',
@@ -16,7 +16,6 @@ function handleHTTP (data) {
                 /* '510', '511',  */ '599'];
 
     var contextClues = ['what', 'what\'s', '?', 'mean'];
-
 
     var foundCodes = [];
 

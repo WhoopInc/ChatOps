@@ -1,5 +1,5 @@
 //var https = require('https');
-require('dotenv').load();   // loads variables from .env to ENV
+require('dotenv').config({silent: true});   // loads variables from .env to ENV
 var app = require('./app.js');
 var core = require('./core.js');
 

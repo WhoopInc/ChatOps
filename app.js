@@ -1,7 +1,5 @@
+require('dotenv').config({silent: true});
 var WebSocket = require('ws');
-require('dotenv').load();
-//var https = require('https');
-//var u = require('url');
 var httpcat = require('./httpcat.js');
 var github = require('./github.js');
 var core = require('./core.js');
@@ -10,57 +8,55 @@ var mb = require('./messagebroker.js');
 var msgBroker;
 
 // when socket opens, notify channel
-function onOpen (soc) {
+function onOpen (soc, channel_ids) {
 
-    var msg = {
-        "id": 1,
-        "type": "message",
-        "channel": "C1BBWJ7PF",
-        "text": "WhoopBot connected to WebSocket"
-    };
-
-    msgBroker = new mb.MessageBroker (soc);
+    msgBroker = new mb.MessageBroker(soc);
 
     msgBroker.init();
 
-    msgBroker.push(msg);
-
-    github.getRepos(msgBroker.push);
-
-}
-
-function helper (msg) {
-    msgBroker.push(msg);
+    channel_ids.forEach(function(id) {
+        msgBroker.push({
+            "id": 1,
+            "type": "message",
+            "channel": id,
+            "text": "WhoopBot " + process.env.VERSION + " connected to WebSocket"
+        })
+    })
 }
 
 
 // process incoming messages, return object with text, channel, user id
 function onEvent (event, soc) {
-    console.log(event);
+    if (soc.readyState === WebSocket.OPEN) {
+        console.log(event);
 
-    var ev = JSON.parse(event);
-    var output = {};
+        var ev = JSON.parse(event);
+        var output = {};
 
-    // if event is a message NOT from self, package relevant info
-    if (!core.ignoreEvent(event)) {
+        // if event is a message NOT from self, package relevant info
+        if (!core.ignoreEvent(ev)) {
 
-        output = {
-            type: ev.type,
-            user: ev.user,
-            channel: ev.channel,
-            text: ev.text
-        };
+            output = {
+                type: ev.type,
+                user: ev.user,
+                channel: ev.channel,
+                text: ev.text
+            };
 
-        // if (ev.text === 'get github') {
-        //     console.log('called getRepos from app');
-        //     github.getRepos();
-        // }
+            if (ev.text === 'get github') {
+                github.getRepos(ev.channel, function (res) {
+                    msgBroker.push(res);
+                });
+            }
 
-        msgBroker.push(httpcat.handleHTTP(output));
+            // prepare to handle http messages
+            var cat = httpcat.handleHTTP(output);
 
+            if (cat) {
+                msgBroker.push(cat);
+            }
+        }
     }
-
-
 }
 
 // when HTTPS request finished, initialize WebSocket and handle events
@@ -68,9 +64,17 @@ function initializeWebSocket(data) {
 
     var socket = new WebSocket(data.url);
 
+    var member_channels = [];
+
+    data.channels.forEach(function(channel) {
+        if (channel.is_member) {
+            member_channels.push(channel.id);
+        }
+    });
+
     // handle socket opening
     socket.on('open', function() {
-        onOpen(socket);
+        onOpen(socket, member_channels);
     });
 
     // handle incoming messages
@@ -79,13 +83,13 @@ function initializeWebSocket(data) {
 
     });
 
+    socket.on('close', function close() {
+        console.log('disconnected');
+    });
+
 }
 
 
-
-
-
 module.exports = {
-    initializeWebSocket: initializeWebSocket,
-    helper: helper
+    initializeWebSocket: initializeWebSocket
 };
