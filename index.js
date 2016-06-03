@@ -1,51 +1,55 @@
-var https = require('https');
-require('dotenv').load();   // loads variables from .env to ENV
+//var https = require('https');
+require('dotenv').config({silent: true});   // loads variables from .env to ENV
 var app = require('./app.js');
+var core = require('./core.js');
+
 
 // contents of HTTPS server request
 var options = {
-    hostname: 'slack.com',
-    port: 443,
-    path: '/api/rtm.start?token=' + process.env.SLACK_API_TOKEN,
-    method: 'GET'
+    url: 'slack.com/api/rtm.start?token=' + process.env.SLACK_API_TOKEN
 };
 
-// collects data from HTTPS response
-function httpsResponse(res) {
-    // console.log('statusCode: ', res.statusCode);
-    // console.log('headers: ', res.headers);
+core.makeRequest(options, app.initializeWebSocket);
 
-    res.on('data', function (data) {
-        alldata = alldata + data.toString();
-        //console.log('end data callback');
-    });
 
-    res.on('close', function() {
-        //console.log('end response callback');
-        app.initializeWebSocket(alldata);
 
-    });
-}
+// // collects data from HTTPS response
+// function httpsResponse(res) {
+//     // console.log('statusCode: ', res.statusCode);
+//     // console.log('headers: ', res.headers);
 
-var alldata = '';
+//     res.on('data', function (data) {
+//         alldata = alldata + data.toString();
+//         //console.log('end data callback');
+//     });
+
+//     res.on('close', function() {
+//         //console.log('end response callback');
+//         app.initializeWebSocket(alldata);
+
+//     });
+// }
+
+//var alldata = '';
 
 // makes HTTPS request, collects data received
-var req = https.request(options, function(res) {
-    httpsResponse(res);
-});
+// var req = https.request(options, function(res) {
+//     httpsResponse(res);
+// });
 
-req.on('close', function() {
-    //console.log('end request');
-    //console.log(alldata);
-    //console.log(exports.alldata);
-    app.initializeWebSocket(alldata);
-});
+// req.on('close', function() {
+//     //console.log('end request');
+//     //console.log(alldata);
+//     //console.log(exports.alldata);
+//     app.initializeWebSocket(alldata);
+// });
 
-req.end();
+// req.end();
+
 
 module.exports = {
-    options: options,
-    httpsResponse: httpsResponse,
-    request: req,
-    alldata: alldata
+    options: options
+    //httpsResponse: httpsResponse,
+    //request: req,
+    //alldata: alldata
 };
