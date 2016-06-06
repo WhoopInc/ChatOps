@@ -14,7 +14,7 @@ function makeRequest (object, callback, responseCB) {
         method: object.method || 'GET'
     };
 
-    //console.log('PATH: ', options.path);
+    console.log('MAKING REQUEST TO: ', object.url);
 
     if (options.hostname === 'api.github.com') {
         options.auth = process.env.GITHUB_USERNAME + ':' +
@@ -124,23 +124,17 @@ function paginate (options, callback) {
         //console.log('LINK HEADER: ', linkHeader);
 
         if (linkHeader) {
-            // var totalPages = 0;
-            // var constantUrl = '';
             var links = linkHeader.split(',');
 
             var nextRegEx = new RegExp('<https://(.*)page=(.+)>; rel="last"');
 
-            // nothing that matches regexp. fix.
             for (var j = 0; j < links.length; j++) {
                 var matches = nextRegEx.exec(links[j]);
                 if (matches) {
-                    //console.log('WERE MATCHES');
 
                     var totalPages = matches[2];
                     var constantUrl = matches[1];
 
-                    //console.log('NO. PAGES MATCH: ', totalPages);
-                    //console.log('CONSTANT URL MATCH: ', constantUrl);
 
                     for (var k = 2; k <= totalPages; k++) {
                         var newOptions = {
