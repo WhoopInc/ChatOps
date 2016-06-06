@@ -1,0 +1,5 @@
+.*
+test
+node_modules
+ecs-task.json*
+deploy.bash
