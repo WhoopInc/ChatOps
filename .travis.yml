@@ -7,6 +7,7 @@ before_install:
 - pip install --user awscli
 - export PATH=$PATH:$HOME/.local/bin
 deploy:
+  deploy.skip_cleanup: true
   provider: script
   script: "./deploy.bash"
 env:
