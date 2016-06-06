@@ -3,6 +3,7 @@ var index = require('../index.js');
 var app = require('../app.js');
 var httpcat = require('../httpcat.js');
 var core = require('../core.js');
+var github = require('../github.js');
 //var request = require('request');
 //var https = require('https');
 
@@ -87,6 +88,29 @@ describe('handleHTTP', function () {
             done();
         });
 });
+
+var testRepos = [
+                 [{state: "open"},
+                  {state: "open"},
+                  {state: "closed"}],
+                 [{state: "open"}]
+                ];
+
+
+
+describe('getPR', function () {
+  it('should only count open PRs',
+      function (done) {
+        assert.equal(github.getPR(testRepos[0]), "2");
+        done();
+      });
+  it('should work for repos with 1 PR',
+      function (done) {
+        assert.equal(github.getPR(testRepos[1]), "1");
+        done();
+      });
+})
+
 
 
 
