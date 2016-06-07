@@ -1,6 +1,43 @@
 var core = require('./core.js');
 
 
+// // get repositories, output string of repo data
+// function getRepos (channel, callback) {
+
+//     //var outputMessage = [];
+//     var options = {
+//         url: 'api.github.com/orgs/WhoopInc/repos'
+//     };
+
+//     //console.log('point1');
+
+//     core.paginate(options, function (repoArray) {
+
+//         // traverse array of repos
+//         repoArray.forEach(function (repo) {
+
+//             var urlOption = {url: 'api.github.com/repos/WhoopInc/' +
+//             repo.name + '/pulls'};
+
+//             // get the pull requests for the repository
+//             core.makeRequest(urlOption, function(prArray) {
+//                 var prs = getPR(prArray);
+
+//                 if (prs > 0) {
+//                     callback({
+//                         "id": 3,
+//                         "type": "message",
+//                         "channel": channel,
+//                         "text": prs + " open pull request(s) in " + repo.name + " " +
+//                         repo.html_url
+//                     });
+//                 }
+
+//             });
+//         });
+//     });
+// }
+
 // get repositories, output string of repo data
 function getRepos (channel, callback) {
 
@@ -9,9 +46,10 @@ function getRepos (channel, callback) {
         url: 'api.github.com/orgs/WhoopInc/repos'
     };
 
-    //console.log('point1');
-
     core.paginate(options, function (repoArray) {
+
+        var outputMessage = ''
+        var repoCounter = 0;
 
         // traverse array of repos
         repoArray.forEach(function (repo) {
@@ -21,47 +59,49 @@ function getRepos (channel, callback) {
 
             // get the pull requests for the repository
             core.makeRequest(urlOption, function(prArray) {
-                var prs = getPR(prArray);
-                callback({
-                    "id": 3,
-                    "type": "message",
-                    "channel": channel,
-                    "text": prs + " open pull request(s) in " + repo.name + " " +
-                    repo.html_url
-                });
+                // retrieve number of open pull requests
+                var prs = countOpenPR(prArray);
+
+                // only prepare message if PRs exist
+                if (prs > 0) {
+                    outputMessage += prs.toString() + " open pull request(s) in " +
+                    repo.html_url.toString() + "\n";
+                }
+
+
+                repoCounter++;
+
+                // when entire repoArray traversed, call callback
+                if (repoCounter === repoArray.length) {
+                    callback({
+                        "id": 3,
+                        "type": "message",
+                        "channel": channel,
+                        "text": outputMessage
+                    });
+                }
             });
         });
     });
 }
 
-function getPR (prArray) {
+function countOpenPR (prArray) {
 
-    // for each pull request per repository, delete if not open
+    var prCounter = 0;
+
+    // for each pull request per repository, count if open
     prArray.forEach(function (pullrequest) {
-        if (pullrequest.state !== "open") {
-            prArray.pop(pullrequest);
+        if (pullrequest.state === "open") {
+            prCounter++;
         }
     });
 
-    // get number of pull requests in repo
-    var prequests = prArray.length;
-
-    // only send messages for repos with 1+ pull requests
-    if (prequests !== 0) {
-
-        return prequests;
-        callback({
-            "id": 3,
-            "type": "message",
-            "channel": channel,
-            "text": prequests + " open pull request(s) in " + repo.name + " " +
-            repo.html_url
-        });
-    }
-
+    return prCounter;
 }
+
+
 
 module.exports = {
     getRepos: getRepos,
-    getPR: getPR
+    countOpenPR: countOpenPR
 };

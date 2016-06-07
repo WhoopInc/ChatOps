@@ -93,23 +93,29 @@ var testRepos = [
                  [{state: "open"},
                   {state: "open"},
                   {state: "closed"}],
-                 [{state: "open"}]
+                 [{state: "open"}],
+                 []
                 ];
 
 
 
-describe('getPR', function () {
-  it('should only count open PRs',
-      function (done) {
-        assert.equal(github.getPR(testRepos[0]), "2");
-        done();
-      });
-  it('should work for repos with 1 PR',
-      function (done) {
-        assert.equal(github.getPR(testRepos[1]), "1");
-        done();
-      });
-})
+describe('countOpenPR', function () {
+    it('should only count open PRs',
+        function (done) {
+            assert.equal(github.countOpenPR(testRepos[0]), 2);
+            done();
+        });
+    it('should work for repos with 1 PR',
+        function (done) {
+            assert.equal(github.countOpenPR(testRepos[1]), 1);
+            done();
+        });
+    it('should return 0 for empty PR array',
+        function (done) {
+            assert.equal(github.countOpenPR(testRepos[2]), 0);
+            done();
+        })
+});
 
 
 
