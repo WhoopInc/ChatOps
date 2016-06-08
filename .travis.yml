@@ -3,21 +3,27 @@ node_js:
 - '5'
 sudo: required
 services:
+  - docker
 before_install:
 - openssl aes-256-cbc -K $encrypted_19134462ce56_key -iv $encrypted_19134462ce56_iv
   -in ecs-task.json.enc -out ecs-task.json -d
 - pip install --user awscli
 - export PATH=$PATH:$HOME/.local/bin
 - sudo apt-get update
+- apt-cache madison docker-engine
+- sudo apt-get -o Dpkg::Options::="--force-confnew" install -y docker-engine=${DOCKER_VERSION}
 - sudo apt-get install -o Dpkg::Options::="--force-confold" --force-yes -y docker-engine
 - docker build -t test:latest .
 - docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
 - docker push whoop/chat-ops:latest
+script:
+- docker version
 deploy:
   skip_cleanup: true
   provider: script
   script: "./deploy.bash"
 env:
   global:
+  - DOCKER_VERSION=1.11.1-0~trusty
   - secure: voJC1Fr1Olm6zdLXmDwGkYD7NrTJQtHif6rabtVBKPKeSBmpuyKSuASW/cvW13m/JEWnFcb2pRzMcbqlbt8mMDvB14F4ruROJwNXK1OuK/zaiQfHyiN6KCGiAd8o2SW328hAnFEKKYvxXrZgltolai+tYKAOdeKrlfrIs6f9JrbVo+a/WogPrP8K0INP6KlA68mBKbiAJvboyvKUv8J/ODdEoXwY+x0E16CeGBwGJaRmZaBfArgMUyGj9CIM5LDa65e/fjbPgFeNuWfmDZfSh/qUKWjkPnjEMwubmMLmrw4fBujADazv4p5fInrszMz2UJUPgErJbJFDqdPZIxnB3cWY8ky+pWSeWI8vdiFJbq2yue53tMTcEhQq+4HfhWo9P89//40/1Bs0dWyczMI/nWh7kFJlJTw9Kr1+4T+DpiozEYhsVs620klAL3zGmrk1aDsrHwJDf/Nl8/g++Zw94ByXtDczDj1ffoMqOv5VReVPyLQiESXUtVczdvNf+gf32uB8yajgbWcGX9bylY4QXDjYPkzVMAmlZzqLj2cEJa04zdOLcuB1p49N3Dd3fjCQybpIODIFM3ytxHyzzfCG/LdVBa8vhsEyUUJpyAl/opaqlr3dRAySYUc+U4Yx1vNJljfFC4vJdozrMW72pGWpMy28EQEqcMkaQr29dkGb9uc=
   - secure: wq4c6b/2Pwwhjs2oFGlGPR+UXS4SQAIdnXG/rmLuo+gwjsc7whFgzA/hMoEgGVhQffQKxpV7AfMxiy5ADAPFcapDpBvZOSRzzm+jNcxh8FITCT1o7fWZ74Q0joP4hDlgw+XdAtl/a3xYyBEB/2j3oV/VUJ9+q7YQhgN0J6Ckg2ISZ0kN7K+a8QpWTG8GbtCS3RXCSsAj94WwStqOFoQCkd+DCs48TklqWZfjGDwbZT1QKmXzwfxFHCijO+lq4xBTlAFhYNY+yMTrv0IAx5l3oCTaFuaAJOWFPNH/3dwa7r4A5EVnnlNfyyXPBb0hBEyYWjMhV7XwQejLlOp8t+1ODkI3C7IOS5YysyRncudWtsMJkWlwa2eiZzjq/tr1/UaHxo2MWiqi8EwDn9l+fCQEFpJHZxPSgIL8ZUwosvv/QEgBuuW79ToZOmaaPOrM4vbPUXh+1LsccMXsW/QuMNc3vCe420OaUkBfvpcfa/hMjwF58kqrGoa2HXMwzJChqD0bW34zLH87Ewpp1oYjzGQ7bYVnswfldcDxyLqvDrTG7bJ6hxhLKVK7q/6++Pm5FnavQqruhDePtahiWFaNl7NHCsxSuxA5sERwRTNDbp0U6YzudeYjsd9kZJnPH3ToOttdkn9Yake6o8h2iDvF4UBlGm/j18P6PBrPBlxaWWNUEVk=
