@@ -84,7 +84,28 @@ function initializeWebSocket(data) {
     });
 
     socket.on('close', function close() {
-        console.log('disconnected');
+        //console.log('disconnected');
+        member_channels.forEach(function (channel_id) {
+            msgBroker.push({
+                "id": 1,
+                "type": "message",
+                "channel": channel_id,
+                "text": "WhoopBot " + process.env.VERSION + " disconnected from WebSocket."
+            });
+        });
+    });
+
+    process.on('SIGTERM', function () {
+        //console.log('CAUGHT SIGTERM');
+        member_channels.forEach(function (channel_id) {
+            msgBroker.push({
+                "id": 1,
+                "type": "message",
+                "channel": channel_id,
+                "text": "WhoopBot " + process.env.VERSION + " disconnected, received SIGTERM."
+            });
+        });
+
     });
 
 }

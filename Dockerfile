@@ -7,4 +7,4 @@ RUN npm install
 
 COPY . .
 
-CMD node index.js
+CMD ["/usr/local/bin/node", "index.js"]
