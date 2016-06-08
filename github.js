@@ -3,14 +3,13 @@ var core = require('./core.js');
 // get repositories, output string of repo data
 function getRepos (channel, callback) {
 
-    //var outputMessage = [];
     var options = {
         url: 'api.github.com/orgs/WhoopInc/repos'
     };
 
     core.paginate(options, function (repoArray) {
 
-        var outputMessage = ''
+        var outputMessage = '';
         var repoCounter = 0;
 
         // traverse array of repos
@@ -20,7 +19,8 @@ function getRepos (channel, callback) {
             repo.name + '/pulls'};
 
             // get the pull requests for the repository
-            core.makeRequest(urlOption, function(prArray) {
+            core.makeRequest(urlOption, function (prArray) {
+
                 // retrieve number of open pull requests
                 var prs = countOpenPR(prArray);
 
@@ -29,7 +29,6 @@ function getRepos (channel, callback) {
                     outputMessage += prs.toString() + " open pull request(s) in " +
                     repo.html_url.toString() + "\n";
                 }
-
 
                 repoCounter++;
 
@@ -60,8 +59,6 @@ function countOpenPR (prArray) {
 
     return prCounter;
 }
-
-
 
 module.exports = {
     getRepos: getRepos,
