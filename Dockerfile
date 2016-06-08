@@ -1,6 +1,6 @@
 FROM node:6
 
-WORKDIR /ChatOps
+WORKDIR /Users/janetchen/WebstormProjects/ChatOps
 COPY package.json .
 
 RUN npm install
