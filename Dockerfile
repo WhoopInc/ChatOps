@@ -1,10 +1,10 @@
 FROM node:6
 
 WORKDIR /ChatOps
-COPY package.json .
+COPY package.json ./
 
 RUN npm install
 
 COPY . .
 
-CMD node index.js
+CMD ["/usr/local/bin/node", "index.js"]

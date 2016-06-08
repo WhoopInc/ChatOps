@@ -1,6 +1,10 @@
 #!/bin/bash -e
 
-task=$(aws --region=us-west-2 ecs register-task-definition --cli-input-json "$(cat ecs-task.json)" --query=taskDefinition.taskDefinitionArn --output=text)
+export VERSION=$(git log -n 1 | head -1 | cut -f2 -d' ')
+
+input=$(node makeTask.js)
+
+task=$(aws --region=us-west-2 ecs register-task-definition --cli-input-json "$input" --query=taskDefinition.taskDefinitionArn --output=text)
 
 aws --region=us-west-2 ecs update-service --service=ChatOps --desired-count=0
 

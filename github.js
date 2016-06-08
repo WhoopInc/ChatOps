@@ -1,6 +1,5 @@
 var core = require('./core.js');
 
-
 // get repositories, output string of repo data
 function getRepos (channel, callback) {
 
@@ -9,9 +8,10 @@ function getRepos (channel, callback) {
         url: 'api.github.com/orgs/WhoopInc/repos'
     };
 
-    //console.log('point1');
-
     core.paginate(options, function (repoArray) {
+
+        var outputMessage = ''
+        var repoCounter = 0;
 
         // traverse array of repos
         repoArray.forEach(function (repo) {
@@ -20,36 +20,50 @@ function getRepos (channel, callback) {
             repo.name + '/pulls'};
 
             // get the pull requests for the repository
-            core.makeRequest(urlOption, function (prArray) {
+            core.makeRequest(urlOption, function(prArray) {
+                // retrieve number of open pull requests
+                var prs = countOpenPR(prArray);
 
-                // for each pull request per repository, delete if not open
-                prArray.forEach(function (pullrequest) {
-                    if (pullrequest.state !== "open") {
-                        prArray.pop(pullrequest);
-                    }
-                });
+                // only prepare message if PRs exist
+                if (prs > 0) {
+                    outputMessage += prs.toString() + " open pull request(s) in " +
+                    repo.html_url.toString() + "\n";
+                }
 
-                // get number of pull requests in repo
-                var prequests = prArray.length;
 
-                // only send messages for repos with 1+ pull requests
-                if (prequests !== 0) {
-                    //console.log('REPOARRAY[' + index + ']: ', repo);
+                repoCounter++;
+
+                // when entire repoArray traversed, call callback
+                if (repoCounter === repoArray.length) {
                     callback({
                         "id": 3,
                         "type": "message",
                         "channel": channel,
-                        "text": prequests + " open pull request(s) in " +
-                        repo.name
+                        "text": outputMessage
                     });
                 }
-
-                //console.log('OUTPUT MESSAGE: ', outputMessage);
             });
         });
     });
 }
 
+function countOpenPR (prArray) {
+
+    var prCounter = 0;
+
+    // for each pull request per repository, count if open
+    prArray.forEach(function (pullrequest) {
+        if (pullrequest.state === "open") {
+            prCounter++;
+        }
+    });
+
+    return prCounter;
+}
+
+
+
 module.exports = {
-    getRepos: getRepos
+    getRepos: getRepos,
+    countOpenPR: countOpenPR
 };
