@@ -34,9 +34,7 @@ function handleHTTP (data) {
                 "text": "https://http.cat/" + foundCodes[0]
             };
 
-            // console.log('outgoing: ', outgoing);
             return outgoing;
-            // break;
         }
     }
 }

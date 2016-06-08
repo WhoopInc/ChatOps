@@ -14,8 +14,6 @@ function makeRequest (object, callback, responseCB) {
         method: object.method || 'GET'
     };
 
-    //console.log('PATH: ', options.path);
-
     if (options.hostname === 'api.github.com') {
         options.auth = process.env.GITHUB_USERNAME + ':' +
         process.env.GITHUB_API_TOKEN;
@@ -57,47 +55,6 @@ function makeRequest (object, callback, responseCB) {
 
     req.end();
 }
-
-// function sendMessage(soc, data) {
-//     //console.log('sendMessage called');
-//     if (soc.readyState === WebSocket.OPEN && data) {
-//         //console.log('data exist');
-//         if (Array.isArray(data)) {
-//             //console.log('sending array');
-
-//             var val = data.pop();
-//             setInterval(function () {
-//                 soc.send(JSON.stringify(val));
-//             }, 1000);
-
-//             for (var i = 0; i < data.length; i++) {
-//                 setTimeout(function () {
-//                     soc.send(JSON.stringify(data[i]));
-//                 }, 1000);
-//             }
-//         }
-//         else {
-//             soc.send(JSON.stringify(data));
-//             //console.log('sent normal term');
-//         }
-//     }
-// }
-
-// function joinChannel (name) {
-//     var options = {
-//         url: 'slack.com/api/channels.join?token=' + process.env.SLACK_API_TOKEN
-//         + '?name=' + name
-//     };
-
-//     makeRequest(options, function (res) {
-//         if (res.ok) {
-//             console.log('joined channel');
-//         }
-//         else {
-//             console.log('failed to join channel');
-//         }
-//     }, false);
-// }
 
 
 function ignoreEvent (event) {

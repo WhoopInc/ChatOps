@@ -95,8 +95,8 @@ function initializeWebSocket(data) {
         });
     });
 
-    process.on('SIGTERM', function () {
-        //console.log('CAUGHT SIGTERM');
+    process.once('SIGTERM', function () {
+        console.log('CAUGHT SIGTERM');
         member_channels.forEach(function (channel_id) {
             msgBroker.push({
                 "id": 1,
@@ -105,7 +105,6 @@ function initializeWebSocket(data) {
                 "text": "WhoopBot " + process.env.VERSION + " disconnected, received SIGTERM."
             });
         });
-
     });
 
 }
