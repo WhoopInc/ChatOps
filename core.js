@@ -87,7 +87,6 @@ function paginate (options, callback) {
 
             var nextRegEx = new RegExp('<https://(.*)page=(.+)>; rel="last"');
 
-            // nothing that matches regexp. fix.
             for (var j = 0; j < links.length; j++) {
                 var matches = nextRegEx.exec(links[j]);
                 if (matches) {

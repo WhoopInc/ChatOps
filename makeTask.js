@@ -14,9 +14,17 @@ var view = {};
 view.env = _.chain(process.env)
 .pick(process.env, ['SLACK_API_TOKEN', 'GITHUB_API_TOKEN', 'GITHUB_USERNAME', 'VERSION'])
 .reduce(function (acc, value, key) {
-    (acc || (acc = [])).push({ "name": key, "value": value });
+    (acc || (acc = [])).push({ "name": key, "value": value, "comma": true });
     return acc;
 }, [])
+.value();
+
+var version = _.chain(process.env)
+.pick(process.env, ['VERSION'])
+.reduce(function (acc, value, key) {
+    acc.push({ "name": key, "value": value, "comma": false });
+    return acc;
+}, view.env)
 .value();
 
 var output = Mustache.render(template, view);
