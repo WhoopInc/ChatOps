@@ -9,6 +9,7 @@ before_install:
   -in ecs-task.json.enc -out ecs-task.json -d
 - pip install --user awscli
 - export PATH=$PATH:$HOME/.local/bin
+- docker --version
 - docker build -t test:latest .
 - docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
 - docker push whoop/chat-ops:latest
