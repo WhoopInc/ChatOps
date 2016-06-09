@@ -122,8 +122,6 @@ function paginate (options, callback) {
             }
         }
     });
-
-
 }
 
 module.exports = {
