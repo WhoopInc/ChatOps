@@ -3,7 +3,6 @@ var u = require('url');
 
 function makeRequest (object, callback, responseCB) {
     var accumulator = '';
-    var response = null;
 
     var parsedUrl = u.parse('//' + object.url, true, true);
 
@@ -13,6 +12,11 @@ function makeRequest (object, callback, responseCB) {
         path: parsedUrl.path,
         method: object.method || 'GET'
     };
+
+    if (options.hostname === 'jenkins.whoop.com') {
+        options.auth = process.env.GITHUB_USERNAME + ':' +
+        process.env.GITHUB_API_TOKEN;
+    }
 
     if (options.hostname === 'api.github.com') {
         options.auth = process.env.GITHUB_USERNAME + ':' +
@@ -26,16 +30,23 @@ function makeRequest (object, callback, responseCB) {
         }
     }
 
+    var response = null;
     var req = https.request(options, function(res) {
-        //console.log('RESPONSE', res);
         response = res;
 
         res.on('data', function (data) {
             accumulator = accumulator + data.toString();
+            res.resume();
         });
 
         res.on('close', function () {
-            callback(JSON.parse(accumulator));
+            try {
+                callback(JSON.parse(accumulator));
+            }
+            catch (err) {
+                // handle non-JSON accumulators
+            }
+
 
             if (responseCB) {
                 responseCB(res);
@@ -45,7 +56,12 @@ function makeRequest (object, callback, responseCB) {
     });
 
     req.on('close', function () {
-        callback(JSON.parse(accumulator));
+        try {
+            callback(JSON.parse(accumulator));
+        }
+        catch (err) {
+            // handle non-JSON accumulators
+        }
 
         if (responseCB) {
             responseCB(response);
@@ -78,11 +94,9 @@ function ignoreEvent (event) {
 function paginate (options, callback) {
     makeRequest(options, callback, function(response) {
         var linkHeader = response.headers.link;
-        //console.log('LINK HEADER: ', linkHeader);
 
         if (linkHeader) {
-            // var totalPages = 0;
-            // var constantUrl = '';
+
             var links = linkHeader.split(',');
 
             var nextRegEx = new RegExp('<https://(.*)page=(.+)>; rel="last"');
@@ -90,13 +104,9 @@ function paginate (options, callback) {
             for (var j = 0; j < links.length; j++) {
                 var matches = nextRegEx.exec(links[j]);
                 if (matches) {
-                    //console.log('WERE MATCHES');
 
                     var totalPages = matches[2];
                     var constantUrl = matches[1];
-
-                    //console.log('NO. PAGES MATCH: ', totalPages);
-                    //console.log('CONSTANT URL MATCH: ', constantUrl);
 
                     for (var k = 2; k <= totalPages; k++) {
                         var newOptions = {

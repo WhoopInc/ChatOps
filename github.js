@@ -26,8 +26,9 @@ function getRepos (channel, callback) {
 
                 // only prepare message if PRs exist
                 if (prs > 0) {
-                    outputMessage += prs.toString() + " open pull request(s) in " +
-                    repo.html_url.toString() + "\n";
+                    outputMessage += prs.toString() +
+                    " open pull request(s) in " + repo.html_url.toString() +
+                    "\n";
                 }
 
                 repoCounter++;
