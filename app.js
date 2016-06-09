@@ -51,11 +51,10 @@ function onEvent (event, soc) {
                 });
             }
 
-            if (ev.text.includes("job")) {
-                jenkins.buildJenkinsJob(ev.text.split(" ").pop(), ev.channel,
-                    function (res) {
-                        msgBroker.push(res);
-                    });
+            if (ev.text.includes("jenkins")) {
+                jenkins.processCommand(ev.text.split("jenkins ").pop().trim(), ev.channel, function (res) {
+                    msgBroker.push(res);
+                })
             }
 
 

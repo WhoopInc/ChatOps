@@ -1,6 +1,13 @@
 var https = require('https');
 var u = require('url');
 
+function getAuthByHost (hostname) {
+    if (hostname === 'jenkins.whoop.com' || hostname === 'api.github.com') {
+        return process.env.GITHUB_USERNAME + ':' +
+        process.env.GITHUB_API_TOKEN;
+    }
+}
+
 function makeRequest (object, callback, responseCB) {
     var accumulator = '';
 
@@ -10,17 +17,11 @@ function makeRequest (object, callback, responseCB) {
         hostname: parsedUrl.hostname,
         port: object.port || 443,
         path: parsedUrl.path,
-        method: object.method || 'GET'
+        method: object.method || 'GET',
+        auth: getAuthByHost(parsedUrl.hostname)
     };
 
-    if (options.hostname === 'jenkins.whoop.com') {
-        options.auth = process.env.GITHUB_USERNAME + ':' +
-        process.env.GITHUB_API_TOKEN;
-    }
-
     if (options.hostname === 'api.github.com') {
-        options.auth = process.env.GITHUB_USERNAME + ':' +
-        process.env.GITHUB_API_TOKEN;
 
         if (!object.headers) {
             options.headers = {'User-Agent': 'WhoopInc'};
