@@ -1,12 +1,12 @@
 var core = require('./core.js');
 const _ = require('lodash');
+var querystring = require('querystring');
 
 /* * Given a job object, makes a build request to object's URL and
-   * communicates to user on given channel.
+   * communicates to user on given channel. Checks for failed builds
+   * and notifies user.
    */
-function buildJenkinsJob (requestedJobObject, channel, callback) {
-
-    var sentMessage = false;
+function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
 
     var jobOptions = {
 
@@ -14,19 +14,61 @@ function buildJenkinsJob (requestedJobObject, channel, callback) {
         method: 'POST'
     };
 
-    core.makeRequest(jobOptions, function () {}, function (response) {
-        if (response.statusCode === 201) {
-            if (!sentMessage) {
+    var postData;
+
+    if (!_.isEmpty(parameters)) {
+        console.log('PROCESSSING PARAMETERS');
+        var postData = querystring.stringify(parameters);
+        console.log('POST DATA: ', postData);
+        jobOptions.headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': postData.length
+        };
+        jobOptions.url += 'WithParameters';
+    }
+
+    //console.log('JOB OPTIONS: ', jobOptions);
+
+    core.makeRequest(jobOptions, function (data, statusCode) {
+        // console.log('DATA: ', data);
+        if (statusCode === 201) {
+            callback({
+                "id": 4,
+                "type": "message",
+                "channel": channel,
+                "text": requestedJobObject.name + ' successfully queued.'
+            });
+        }
+
+        // parse data for commmon/known/expected errors.
+        else if (data && statusCode > 299) {
+            // console.log('DATA FOUND');
+
+            // check for missing parameter error
+            if (data.includes("Nothing is submitted") && statusCode === 400) {
                 callback({
                     "id": 4,
                     "type": "message",
                     "channel": channel,
-                    "text": requestedJobObject.name + ' successfully queued.'
-                });
-                sentMessage = true;
+                    "text": requestedJobObject.name +
+                    ' takes parameter(s). Specify parameters with ' +
+                    '"-p key=value". Build failed with status code '+
+                    statusCode + '.'
+                })
             }
         }
-    });
+
+        else {
+            callback({
+                "id": 4,
+                "type": "message",
+                "channel": channel,
+                "text": 'Request to ' + requestedJobObject.name +
+                ' failed with status code ' + statusCode + '.'
+            });
+        }
+
+    }, function () {}, postData);
 }
 
 /* * Retrieves list of all jenkins jobs, prepares to manipulate list.
@@ -34,6 +76,7 @@ function buildJenkinsJob (requestedJobObject, channel, callback) {
    * or other within-app memory.
    */
 function getFullJobList (callback) {
+    console.log('GETFULLJOBLIST CALLED');
     var options = {
         url: 'jenkins.whoop.com/api/json',
         method: 'POST'
@@ -95,12 +138,13 @@ function processCommand (text, channel, callback) {
             listQuery = list[1].trim();
 
             // if listQuery, acculumate matches to prefix.
-            var keywordMatches = findMatches(listQuery, jobArray, function (item) {
-                // if no listQuery, accumulate all entries.
-                if (listQuery === '') {
-                    outputMessage += item.name + '\n';
-                }
-            });
+            var keywordMatches = findMatches(listQuery, jobArray,
+                function (item) {
+                    // if no listQuery, accumulate all entries.
+                    if (listQuery === '') {
+                        outputMessage += item.name + '\n';
+                    }
+                });
 
             if (keywordMatches !== []) {
                 keywordMatches.forEach(function (match) {
@@ -124,15 +168,44 @@ function processCommand (text, channel, callback) {
                 });
             }
 
-
-
-
         }
 
-        // NO LIST KEYWORD: attempt to execute a job.
+        // NO LIST KEYWORD: look for flags, then attempt to execute a job.
         else {
+            // first check for flags
+            var splitText = text.split(" -");
+            var command = splitText[0].trim();
 
-            regexp = new RegExp('^' + text + '$', 'i');
+            console.log('COMMAND: ', command);
+
+            var flagExpression = new RegExp('^([A-Za-z]) *(.*)$');
+            var parameters = {};
+
+            // traverse non-command terms of array
+            for (var i = 1; i < splitText.length; i++) {
+                var found = flagExpression.exec(splitText[i]);
+
+                if (found) {
+
+                    // will need to change this IF implementing tags with
+                    // no parameters
+                    var tag = found[1];
+                    console.log('TAG: ', tag);
+                    var info = found[2];
+                    console.log('TAG INFO: ', info);
+
+                    if (tag === 'p') {
+                        var keyVal = info.split("=");
+                        var key = keyVal[0].trim();
+                        parameters[key] = keyVal[1].trim();
+                    }
+                }
+            }
+
+            console.log('PARAMETERS: ', parameters);
+
+            // once flags finished, parse command
+            regexp = new RegExp('^' + command + '$', 'i');
 
             // look for case-insensitive strict match
             var exactMatch = _.find(jobArray, function(job) {
@@ -140,12 +213,12 @@ function processCommand (text, channel, callback) {
             });
 
             if (exactMatch) {
-                buildJenkinsJob(exactMatch, channel, callback);
+                buildJenkinsJob(exactMatch, channel, callback, parameters);
             }
 
             // if no strict match, look for fuzzy match
             else {
-                var inputs = text.split(" ");
+                var inputs = command.split(" ");
 
                 // fold over matches for each keyword until found entries
                 // that match all keywords
@@ -177,7 +250,8 @@ function processCommand (text, channel, callback) {
                         "id": 4,
                         "type": "message",
                         "channel": channel,
-                        "text": 'I could not find that job. Type "jenkins list" to see all jobs.'
+                        "text": 'I could not find that job.' +
+                        ' Type "jenkins list" to see all jobs.'
                     });
                 }
             }

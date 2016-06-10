@@ -8,7 +8,7 @@ function getAuthByHost (hostname) {
     }
 }
 
-function makeRequest (object, callback, responseCB) {
+function makeRequest (object, callback, responseCB, postData) {
     var accumulator = '';
 
     var parsedUrl = u.parse('//' + object.url, true, true);
@@ -21,6 +21,10 @@ function makeRequest (object, callback, responseCB) {
         auth: getAuthByHost(parsedUrl.hostname)
     };
 
+    if (object.headers) {
+        options.headers = object.headers;
+    }
+
     if (options.hostname === 'api.github.com') {
 
         if (!object.headers) {
@@ -30,6 +34,8 @@ function makeRequest (object, callback, responseCB) {
             options.headers['User-Agent'] = 'WhoopInc';
         }
     }
+
+    console.log('OPTIONS: ', options);
 
     var response = null;
     var req = https.request(options, function(res) {
@@ -57,18 +63,29 @@ function makeRequest (object, callback, responseCB) {
     });
 
     req.on('close', function () {
+        console.log('RESPONSE CODE: ', response.statusCode);
+        //console.log('ACCUMULATOR: ', accumulator);
+
+        // first assume accumulator is JSON object
+        var responseContent;
         try {
-            callback(JSON.parse(accumulator));
+            responseContent = JSON.parse(accumulator);
         }
         catch (err) {
-            // handle non-JSON accumulators
+            responseContent = accumulator;
         }
+
+        callback(responseContent, response.statusCode);
 
         if (responseCB) {
             responseCB(response);
         }
 
     });
+
+    if (postData) {
+        req.write(postData);
+    }
 
     req.end();
 }
