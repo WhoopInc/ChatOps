@@ -79,7 +79,7 @@ describe('handleHTTP', function () {
 
     it('should return correct url for messages with 1 code & 2 contextClues',
         function (done) {
-            httpcat.handleHTTP(testerEventObjects[1].channel,
+            httpcat.executePlugin(testerEventObjects[1].channel,
               function (res) {
               assert.equal(res.text, 'https://http.cat/404');
             }, testerEventObjects[1].text);
@@ -88,7 +88,7 @@ describe('handleHTTP', function () {
 
     it('should not return anything for messages with 1 code & 0 contextClues',
         function (done) {
-            assert(!httpcat.handleHTTP(testerEventObjects[2].channel,
+            assert(!httpcat.executePlugin(testerEventObjects[2].channel,
               function () {}, testerEventObjects[2].text));
             done();
         });
