@@ -322,12 +322,14 @@ function handleListKeyword (listQuery, jobArray, outputMessage, callback,
             // if no listQuery, accumulate all entries.
             if (listQuery === '') {
                 outputMessage += item.name + '\n';
+                console.log('OUTPUT MESSAGE: ', outputMessage);
             }
         });
 
     if (keywordMatches !== []) {
         keywordMatches.forEach(function (match) {
             outputMessage += match.name + '\n';
+
         });
 
         callback({
@@ -354,6 +356,11 @@ function handleParameters (parametersObj, keyEqualsVal) {
     var key = keyVal[0].trim();
 
     parametersObj[key] = keyVal[1].trim();
+    console.log('PARAMETERS: ', parametersObj);
+}
+
+function isCallable (text) {
+    return text.includes('jenkins');
 }
 
 
