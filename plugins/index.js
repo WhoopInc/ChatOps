@@ -18,8 +18,7 @@ function handlePlugins (channel, text, user, callback) {
                 channel, callback);
         }
 
-        // prepare to handle http messages
-        var cat = httpcat.handleHTTP(text, channel, callback);
+        httpcat.handleHTTP(text, channel, callback);
 
     }
 }
