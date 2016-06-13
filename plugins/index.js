@@ -26,7 +26,6 @@ function handlePlugins (channel, callback, text, user) {
                 break;
             }
         }
-
     }
 }
 

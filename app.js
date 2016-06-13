@@ -48,7 +48,6 @@ function onEvent (event, soc) {
             plugins.handlePlugins(ev.channel, function (res) {
                 msgBroker.push(res);
             }, ev.text, ev.user);
-
         }
     }
 }
