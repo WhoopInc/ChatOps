@@ -328,7 +328,6 @@ function handleListKeyword (listQuery, jobArray, outputMessage, callback,
     if (keywordMatches !== []) {
         keywordMatches.forEach(function (match) {
             outputMessage += match.name + '\n';
-
         });
 
         callback({
@@ -350,16 +349,13 @@ function handleListKeyword (listQuery, jobArray, outputMessage, callback,
 }
 
 
-function handleParameters (parametersArr, keyEqualsVal) {
+function handleParameters (parametersObj, keyEqualsVal) {
     var keyVal = keyEqualsVal.split("=");
     var key = keyVal[0].trim();
-    var paramObj = {};
-    paramObj[key] = keyVal[1].trim();
-    parametersArr.push(keyEqualsVal);
-   // parametersArr.push(keyVal[1].trim());
 
-    return parametersArr;
+    parametersObj[key] = keyVal[1].trim();
 }
+
 
 function isCallable (text) {
     return text.includes('jenkins');
@@ -409,7 +405,7 @@ function executePlugin (channel, callback, text) {
             var command = splitText[0].trim();
 
             var flagExpression = new RegExp('^([A-Za-z]) *(.*)$');
-            var parameters = [];
+            var parameters = {};
 
             // traverse non-command terms of array
             for (var i = 1; i < splitText.length; i++) {
