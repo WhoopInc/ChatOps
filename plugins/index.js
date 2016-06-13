@@ -19,7 +19,6 @@ var whitelistChannels = ['C1DNMQSCD', // #botdev
 
 function handlePlugins (channel, callback, text, user) {
     if (_.includes(whitelistChannels, channel)) {
-
         for (key in plugins) {
             if (plugins[key].isCallable(text)) {
                 plugins[key].executePlugin(channel, callback, text, user);
