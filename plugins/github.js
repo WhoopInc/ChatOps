@@ -1,4 +1,4 @@
-var core = require('./core.js');
+var core = require('../core.js');
 
 // get repositories, output string of repo data
 function getRepos (channel, callback) {

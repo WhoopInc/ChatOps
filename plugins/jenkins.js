@@ -1,4 +1,4 @@
-var core = require('./core.js');
+var core = require('../core.js');
 const _ = require('lodash');
 var querystring = require('querystring');
 
@@ -16,10 +16,10 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
 
     var postData;
 
+    // prepare postData, if parameters passed in
     if (!_.isEmpty(parameters)) {
-        console.log('PROCESSSING PARAMETERS');
         var postData = querystring.stringify(parameters);
-        console.log('POST DATA: ', postData);
+
         jobOptions.headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Content-Length': postData.length
@@ -27,10 +27,7 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         jobOptions.url += 'WithParameters';
     }
 
-    //console.log('JOB OPTIONS: ', jobOptions);
-
     core.makeRequest(jobOptions, function (data, statusCode) {
-        // console.log('DATA: ', data);
         if (statusCode === 201) {
             callback({
                 "id": 4,
@@ -42,7 +39,6 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
 
         // parse data for commmon/known/expected errors.
         else if (data && statusCode > 299) {
-            // console.log('DATA FOUND');
 
             // check for missing parameter error
             if (data.includes("Nothing is submitted") && statusCode === 400) {
@@ -58,6 +54,7 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
             }
         }
 
+        // uncommon error, notify user
         else {
             callback({
                 "id": 4,
@@ -76,7 +73,6 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
    * or other within-app memory.
    */
 function getFullJobList (callback) {
-    console.log('GETFULLJOBLIST CALLED');
     var options = {
         url: 'jenkins.whoop.com/api/json',
         method: 'POST'
@@ -115,9 +111,53 @@ function findMatches (keyword, collection, additionalFun) {
     }
 }
 
+/* * Lists jenkins jobs that include keyword listQuery, if specified.
+   * If none found, notify user.
+   */
+function handleListKeyword (listQuery, jobArray, outputMessage, callback,
+    channel) {
+    // if listQuery, acculumate matches to prefix.
+    var keywordMatches = findMatches(listQuery, jobArray,
+        function (item) {
+            // if no listQuery, accumulate all entries.
+            if (listQuery === '') {
+                outputMessage += item.name + '\n';
+            }
+        });
+
+    if (keywordMatches !== []) {
+        keywordMatches.forEach(function (match) {
+            outputMessage += match.name + '\n';
+        });
+
+        callback({
+            "id": 4,
+            "type": "message",
+            "channel": channel,
+            "text": '*Jenkins Jobs:*\n' + outputMessage
+        });
+    }
+    else {
+        callback({
+            "id": 4,
+            "type": "message",
+            "channel": channel,
+            "text": 'I could not find any jobs matching ' + listQuery +
+                '. Type "jenkins list" to see all jobs.'
+        });
+    }
+}
+
+
+function handleParameters (parametersObj, keyEqualsVal) {
+    var keyVal = keyEqualsVal.split("=");
+    var key = keyVal[0].trim();
+    parametersObj[key] = keyVal[1].trim();
+}
+
 
 /* * Given text given by the user, determines which operation to run.
-   * Commands with the "list" keyword list Jenkins jobs. Commands without
+   * Commands without
    * keywords attempt to execute a jenkins job.
    */
 function processCommand (text, channel, callback) {
@@ -133,41 +173,9 @@ function processCommand (text, channel, callback) {
 
         // LIST KEYWORD: bot should list all jobs [containing keyword]
         if (list) {
-
             // get prefix of list
             listQuery = list[1].trim();
-
-            // if listQuery, acculumate matches to prefix.
-            var keywordMatches = findMatches(listQuery, jobArray,
-                function (item) {
-                    // if no listQuery, accumulate all entries.
-                    if (listQuery === '') {
-                        outputMessage += item.name + '\n';
-                    }
-                });
-
-            if (keywordMatches !== []) {
-                keywordMatches.forEach(function (match) {
-                    outputMessage += match.name + '\n';
-                });
-
-                callback({
-                    "id": 4,
-                    "type": "message",
-                    "channel": channel,
-                    "text": '*Jenkins Jobs:*\n' + outputMessage
-                });
-            }
-            else {
-                callback({
-                    "id": 4,
-                    "type": "message",
-                    "channel": channel,
-                    "text": 'I could not find any jobs matching ' + listQuery +
-                        '. Type "jenkins list" to see all jobs.'
-                });
-            }
-
+            handleListKeyword(listQuery, jobArray, outputMessage, callback, channel);
         }
 
         // NO LIST KEYWORD: look for flags, then attempt to execute a job.
@@ -175,8 +183,6 @@ function processCommand (text, channel, callback) {
             // first check for flags
             var splitText = text.split(" -");
             var command = splitText[0].trim();
-
-            console.log('COMMAND: ', command);
 
             var flagExpression = new RegExp('^([A-Za-z]) *(.*)$');
             var parameters = {};
@@ -190,19 +196,13 @@ function processCommand (text, channel, callback) {
                     // will need to change this IF implementing tags with
                     // no parameters
                     var tag = found[1];
-                    console.log('TAG: ', tag);
                     var info = found[2];
-                    console.log('TAG INFO: ', info);
 
                     if (tag === 'p') {
-                        var keyVal = info.split("=");
-                        var key = keyVal[0].trim();
-                        parameters[key] = keyVal[1].trim();
+                        handleParameters(parameters, info);
                     }
                 }
             }
-
-            console.log('PARAMETERS: ', parameters);
 
             // once flags finished, parse command
             regexp = new RegExp('^' + command + '$', 'i');
