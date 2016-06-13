@@ -176,6 +176,15 @@ function helpDescription () {
 }
 
 
+function helpDescription () {
+    return '_JENKINS_\nSend *jenkins [keyword] list* to list jenkins' +
+    ' jobs with specified keyword in name.\n' +
+    'Send *jenkins [job name]* to build a jenkins job. If the job name is ' +
+    'not exactly correct, bot will attempt to fuzzy match it to the correct '
+    + 'job.'
+}
+
+
 /* * Given text given by the user, determines which operation to run.
    * Commands without
    * keywords attempt to execute a jenkins job.
