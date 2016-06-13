@@ -1,9 +1,15 @@
 var https = require('https');
 var u = require('url');
 
-function makeRequest (object, callback, responseCB) {
+function getAuthByHost (hostname) {
+    if (hostname === 'jenkins.whoop.com' || hostname === 'api.github.com') {
+        return process.env.GITHUB_USERNAME + ':' +
+        process.env.GITHUB_API_TOKEN;
+    }
+}
+
+function makeRequest (object, callback, responseCB, postData) {
     var accumulator = '';
-    var response = null;
 
     var parsedUrl = u.parse('//' + object.url, true, true);
 
@@ -11,12 +17,15 @@ function makeRequest (object, callback, responseCB) {
         hostname: parsedUrl.hostname,
         port: object.port || 443,
         path: parsedUrl.path,
-        method: object.method || 'GET'
+        method: object.method || 'GET',
+        auth: getAuthByHost(parsedUrl.hostname)
     };
 
+    if (object.headers) {
+        options.headers = object.headers;
+    }
+
     if (options.hostname === 'api.github.com') {
-        options.auth = process.env.GITHUB_USERNAME + ':' +
-        process.env.GITHUB_API_TOKEN;
 
         if (!object.headers) {
             options.headers = {'User-Agent': 'WhoopInc'};
@@ -26,16 +35,25 @@ function makeRequest (object, callback, responseCB) {
         }
     }
 
+    console.log('OPTIONS: ', options);
+
+    var response = null;
     var req = https.request(options, function(res) {
-        //console.log('RESPONSE', res);
         response = res;
 
         res.on('data', function (data) {
             accumulator = accumulator + data.toString();
+            res.resume();
         });
 
         res.on('close', function () {
-            callback(JSON.parse(accumulator));
+            try {
+                callback(JSON.parse(accumulator));
+            }
+            catch (err) {
+                // handle non-JSON accumulators
+            }
+
 
             if (responseCB) {
                 responseCB(res);
@@ -45,13 +63,29 @@ function makeRequest (object, callback, responseCB) {
     });
 
     req.on('close', function () {
-        callback(JSON.parse(accumulator));
+        console.log('RESPONSE CODE: ', response.statusCode);
+        //console.log('ACCUMULATOR: ', accumulator);
+
+        // first assume accumulator is JSON object
+        var responseContent;
+        try {
+            responseContent = JSON.parse(accumulator);
+        }
+        catch (err) {
+            responseContent = accumulator;
+        }
+
+        callback(responseContent, response.statusCode);
 
         if (responseCB) {
             responseCB(response);
         }
 
     });
+
+    if (postData) {
+        req.write(postData);
+    }
 
     req.end();
 }
@@ -78,11 +112,9 @@ function ignoreEvent (event) {
 function paginate (options, callback) {
     makeRequest(options, callback, function(response) {
         var linkHeader = response.headers.link;
-        //console.log('LINK HEADER: ', linkHeader);
 
         if (linkHeader) {
-            // var totalPages = 0;
-            // var constantUrl = '';
+
             var links = linkHeader.split(',');
 
             var nextRegEx = new RegExp('<https://(.*)page=(.+)>; rel="last"');
@@ -90,13 +122,9 @@ function paginate (options, callback) {
             for (var j = 0; j < links.length; j++) {
                 var matches = nextRegEx.exec(links[j]);
                 if (matches) {
-                    //console.log('WERE MATCHES');
 
                     var totalPages = matches[2];
                     var constantUrl = matches[1];
-
-                    //console.log('NO. PAGES MATCH: ', totalPages);
-                    //console.log('CONSTANT URL MATCH: ', constantUrl);
 
                     for (var k = 2; k <= totalPages; k++) {
                         var newOptions = {
@@ -111,8 +139,6 @@ function paginate (options, callback) {
             }
         }
     });
-
-
 }
 
 module.exports = {
