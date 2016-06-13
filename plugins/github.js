@@ -1,7 +1,7 @@
 var core = require('../core.js');
 
 // get repositories, output string of repo data
-function getRepos (channel, callback) {
+function executePlugin (channel, callback) {
 
     var options = {
         url: 'api.github.com/orgs/WhoopInc/repos'
@@ -61,7 +61,12 @@ function countOpenPR (prArray) {
     return prCounter;
 }
 
+function isCallable (text) {
+    return text.trim() === 'get github';
+}
+
 module.exports = {
-    getRepos: getRepos,
+    isCallable: isCallable,
+    executePlugin: executePlugin,
     countOpenPR: countOpenPR
 };

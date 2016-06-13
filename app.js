@@ -10,7 +10,9 @@ const plugins = require('./plugins/index.js');
 
 var msgBroker;
 
-var whitelistChannels = [];
+var whitelistChannels = ['C1DNMQSCD', // #botdev
+                         'C1BBWJ7PF' // #bottest
+];
 
 // when socket opens, notify channel
 function onOpen (soc, channelIDs) {
@@ -20,7 +22,7 @@ function onOpen (soc, channelIDs) {
     msgBroker.init();
 
     channelIDs.forEach(function(id) {
-        if (!_.includes(whitelistChannels, id)) {
+        if (_.includes(whitelistChannels, id)) {
             msgBroker.push({
                 "id": 1,
                 "type": "message",
@@ -39,14 +41,13 @@ function onEvent (event, soc) {
         console.log(event);
 
         var ev = JSON.parse(event);
-        var output = {};
 
         // if event is a message NOT from self, package relevant info
         if (!core.ignoreEvent(ev)) {
 
-            plugins.handlePlugins(ev.channel, ev.text, ev.user, function (res) {
+            plugins.handlePlugins(ev.channel, function (res) {
                 msgBroker.push(res);
-            });
+            }, ev.text, ev.user);
 
         }
     }

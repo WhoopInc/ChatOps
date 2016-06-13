@@ -122,12 +122,14 @@ function handleListKeyword (listQuery, jobArray, outputMessage, callback,
             // if no listQuery, accumulate all entries.
             if (listQuery === '') {
                 outputMessage += item.name + '\n';
+                console.log('OUTPUT MESSAGE: ', outputMessage);
             }
         });
 
     if (keywordMatches !== []) {
         keywordMatches.forEach(function (match) {
             outputMessage += match.name + '\n';
+
         });
 
         callback({
@@ -153,6 +155,11 @@ function handleParameters (parametersObj, keyEqualsVal) {
     var keyVal = keyEqualsVal.split("=");
     var key = keyVal[0].trim();
     parametersObj[key] = keyVal[1].trim();
+    console.log('PARAMETERS: ', parametersObj);
+}
+
+function isCallable (text) {
+    return text.includes('jenkins');
 }
 
 
@@ -160,16 +167,18 @@ function handleParameters (parametersObj, keyEqualsVal) {
    * Commands without
    * keywords attempt to execute a jenkins job.
    */
-function processCommand (text, channel, callback) {
+function executePlugin (channel, callback, text) {
 
     var outputMessage = '';
     var regexp;
+
+    var query = text.split("jenkins ")[1].trim();
 
     // get list of all jobs for reference
     getFullJobList(function (jobArray) {
 
         // determine if list keyword present
-        var list = /(.*)list$/i.exec(text);
+        var list = /(.*)list$/i.exec(query);
 
         // LIST KEYWORD: bot should list all jobs [containing keyword]
         if (list) {
@@ -181,7 +190,7 @@ function processCommand (text, channel, callback) {
         // NO LIST KEYWORD: look for flags, then attempt to execute a job.
         else {
             // first check for flags
-            var splitText = text.split(" -");
+            var splitText = query.split(" -");
             var command = splitText[0].trim();
 
             var flagExpression = new RegExp('^([A-Za-z]) *(.*)$');
@@ -228,7 +237,7 @@ function processCommand (text, channel, callback) {
 
                 // if only one match found at end, execute the job
                 if (finalMatches.length === 1) {
-                    buildJenkinsJob(finalMatches[0], channel, callback);
+                    buildJenkinsJob(finalMatches[0], channel, callback, parameters);
                 }
                 // if more than one final match, ask user if they
                 // meant one of the matches
@@ -260,7 +269,8 @@ function processCommand (text, channel, callback) {
 }
 
 module.exports = {
+    isCallable: isCallable,
+    executePlugin: executePlugin,
     buildJenkinsJob: buildJenkinsJob,
-    processCommand: processCommand,
     findMatches: findMatches
 };

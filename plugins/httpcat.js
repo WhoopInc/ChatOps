@@ -1,4 +1,6 @@
-function handleHTTP (text, channel, callback) {
+function executePlugin (channel, callback, text) {
+
+    console.log('TRYING TO EXECUTE HTTPCAT');
 
     var codes = ['100', '101', /* '102', */
                 '200', '201', '202', /* 203, */ '204', '205', '206', '207',
@@ -39,6 +41,11 @@ function handleHTTP (text, channel, callback) {
     }
 }
 
+function isCallable (text) {
+    return /\d{3}/.test(text);
+}
+
 module.exports = {
-    handleHTTP: handleHTTP
+    isCallable: isCallable,
+    executePlugin: executePlugin
 };
