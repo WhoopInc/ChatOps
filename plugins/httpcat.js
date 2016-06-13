@@ -42,7 +42,12 @@ function isCallable (text) {
     return /\d{3}/.test(text);
 }
 
+function helpDescription () {
+    return '_HTTP CAT_\nTry sending the message *what is 200?*.';
+}
+
 module.exports = {
     isCallable: isCallable,
-    executePlugin: executePlugin
+    executePlugin: executePlugin,
+    helpDescription: helpDescription
 };

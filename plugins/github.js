@@ -61,12 +61,21 @@ function countOpenPR (prArray) {
     return prCounter;
 }
 
+
 function isCallable (text) {
     return text.trim() === 'get github';
+}
+
+function helpDescription () {
+    return '_GITHUB_\nSend *get github* to retrieve a list of all open pull requests.';
 }
 
 module.exports = {
     isCallable: isCallable,
     executePlugin: executePlugin,
-    countOpenPR: countOpenPR
+    countOpenPR: countOpenPR,
+    helpDescription: helpDescription
 };
+
+
+

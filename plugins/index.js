@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const fs = require('fs');
 
-var excludeFromPlugins = ['index.js', 'help.js'];
+var excludeFromPlugins = ['index.js'];
 var plugins = {};
 
 // find and require all plugins
