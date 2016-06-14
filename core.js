@@ -47,12 +47,16 @@ function makeRequest (object, callback, responseCB, postData) {
         });
 
         res.on('close', function () {
+            // first assume accumulator is JSON object
+            var responseContent;
             try {
-                callback(JSON.parse(accumulator));
+                responseContent = JSON.parse(accumulator);
             }
             catch (err) {
-                // handle non-JSON accumulators
+                responseContent = accumulator;
             }
+
+            callback(responseContent, response.statusCode);
 
 
             if (responseCB) {
@@ -93,17 +97,14 @@ function makeRequest (object, callback, responseCB, postData) {
 
 function ignoreEvent (event) {
     if (event.username && event.username === "slackbot") {
-        //console.log("ignore event from slackbot");
         return true;
     }
 
     if (!(event.type === "message" && event.user !== "U1ASA6B88" &&
         !event.hidden)) {
-        //console.log("ignore event", event);
         return true;
     }
 
-    //console.log("don't ignore event", event);
     return false;
 }
 

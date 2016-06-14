@@ -1,12 +1,18 @@
 require('dotenv').config({silent: true});
-var WebSocket = require('ws');
-var httpcat = require('./httpcat.js');
-var github = require('./github.js');
-var core = require('./core.js');
-var mb = require('./messagebroker.js');
-var jenkins = require('./jenkins.js');
+const WebSocket = require('ws');
+const _ = require('lodash');
+
+const core = require('./core.js');
+const mb = require('./messagebroker.js');
+
+const plugins = require('./plugins/index.js');
+
 
 var msgBroker;
+
+var whitelistChannels = ['C1DNMQSCD', // #botdev
+                         'C1BBWJ7PF' // #bottest
+];
 
 // when socket opens, notify channel
 function onOpen (soc, channelIDs) {
@@ -16,13 +22,15 @@ function onOpen (soc, channelIDs) {
     msgBroker.init();
 
     channelIDs.forEach(function(id) {
-        msgBroker.push({
-            "id": 1,
-            "type": "message",
-            "channel": id,
-            "text": "WhoopBot " + process.env.VERSION +
-                " connected to WebSocket"
-        });
+        if (_.includes(whitelistChannels, id)) {
+            msgBroker.push({
+                "id": 1,
+                "type": "message",
+                "channel": id,
+                "text": "WhoopBot " + process.env.VERSION +
+                    " connected to WebSocket"
+            });
+        }
     });
 }
 
@@ -33,37 +41,14 @@ function onEvent (event, soc) {
         console.log(event);
 
         var ev = JSON.parse(event);
-        var output = {};
 
         // if event is a message NOT from self, package relevant info
         if (!core.ignoreEvent(ev)) {
 
-            output = {
-                type: ev.type,
-                user: ev.user,
-                channel: ev.channel,
-                text: ev.text
-            };
+            plugins.handlePlugins(ev.channel, function (res) {
+                msgBroker.push(res);
+            }, ev.text, ev.user);
 
-            if (ev.text === 'get github') {
-                github.getRepos(ev.channel, function (res) {
-                    msgBroker.push(res);
-                });
-            }
-
-            if (ev.text.includes("jenkins")) {
-                jenkins.processCommand(ev.text.split("jenkins ").pop().trim(), ev.channel, function (res) {
-                    msgBroker.push(res);
-                })
-            }
-
-
-            // prepare to handle http messages
-            var cat = httpcat.handleHTTP(output);
-
-            if (cat) {
-                msgBroker.push(cat);
-            }
         }
     }
 }

@@ -1,4 +1,4 @@
-function handleHTTP (data) {
+function executePlugin (channel, callback, text) {
 
     var codes = ['100', '101', /* '102', */
                 '200', '201', '202', /* 203, */ '204', '205', '206', '207',
@@ -20,25 +20,30 @@ function handleHTTP (data) {
     var foundCodes = [];
 
     codes.forEach(function (item) {
-        if (data.text.includes(item)) {
+        if (text.includes(item)) {
             foundCodes.push(item);
         }
     });
 
     for (var i = 0; i < contextClues.length; i++) {
-        if (data.text.includes(contextClues[i]) && foundCodes.length !== 0) {
+        if (text.includes(contextClues[i]) && foundCodes.length !== 0) {
             var outgoing = {
                 "id": 2,
                 "type": "message",
-                "channel": data.channel,
+                "channel": channel,
                 "text": "https://http.cat/" + foundCodes[0]
             };
 
-            return outgoing;
+            callback(outgoing);
         }
     }
 }
 
+function isCallable (text) {
+    return /\d{3}/.test(text);
+}
+
 module.exports = {
-    handleHTTP: handleHTTP
+    isCallable: isCallable,
+    executePlugin: executePlugin
 };

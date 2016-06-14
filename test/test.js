@@ -1,11 +1,11 @@
-var assert = require('chai').assert;
-var index = require('../index.js');
-var app = require('../app.js');
-var httpcat = require('../httpcat.js');
-var core = require('../core.js');
-var github = require('../github.js');
-//var request = require('request');
-//var https = require('https');
+const assert = require('chai').assert;
+
+const index = require('../index.js');
+const app = require('../app.js');
+const core = require('../core.js');
+
+const httpcat = require('../plugins/httpcat.js');
+const github = require('../plugins/github.js');
 
 var testerEventObjects = [{type: "message",
                            user: "U1B225887",
@@ -70,21 +70,26 @@ describe('ignoreEvent', function () {
 describe('handleHTTP', function () {
     it('should return correct url for messages with 1 code & 1 contextClue',
         function (done) {
-            assert.equal(httpcat.handleHTTP(testerEventObjects[0]).text,
-            'https://http.cat/404');
+            httpcat.executePlugin(testerEventObjects[0].channel,
+              function (res) {
+              assert.equal(res.text, 'https://http.cat/404');
+            }, testerEventObjects[0].text);
             done();
         });
 
     it('should return correct url for messages with 1 code & 2 contextClues',
         function (done) {
-            assert.equal(httpcat.handleHTTP(testerEventObjects[1]).text,
-            'https://http.cat/404');
+            httpcat.executePlugin(testerEventObjects[1].channel,
+              function (res) {
+              assert.equal(res.text, 'https://http.cat/404');
+            }, testerEventObjects[1].text);
             done();
         });
 
     it('should not return anything for messages with 1 code & 0 contextClues',
         function (done) {
-            assert(!httpcat.handleHTTP(testerEventObjects[2]));
+            assert(!httpcat.executePlugin(testerEventObjects[2].channel,
+              function () {}, testerEventObjects[2].text));
             done();
         });
 });
