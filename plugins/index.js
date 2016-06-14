@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const fs = require('fs');
 
-var excludeFromPlugins = ['index.js', 'help.js'];
+var excludeFromPlugins = ['index.js'];
 var plugins = {};
 
 // find and require all plugins
@@ -19,14 +19,12 @@ var whitelistChannels = ['C1DNMQSCD', // #botdev
 
 function handlePlugins (channel, callback, text, user) {
     if (_.includes(whitelistChannels, channel)) {
-
         for (key in plugins) {
             if (plugins[key].isCallable(text)) {
                 plugins[key].executePlugin(channel, callback, text, user);
                 break;
             }
         }
-
     }
 }
 
