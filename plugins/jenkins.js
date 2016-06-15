@@ -53,10 +53,11 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         }
 
         // parse data for commmon/known/expected errors.
-        else if (data && statusCode > 299) {
+        else {
 
             // check for missing parameter error
-            if (data.includes("Nothing is submitted") && statusCode === 400) {
+            if (data && data.includes("Nothing is submitted") &&
+                statusCode === 400) {
                 callback({
                     "id": 4,
                     "type": "message",
@@ -67,17 +68,17 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
                     statusCode + '.'
                 });
             }
-        }
 
-        // uncommon error, notify user
-        else {
-            callback({
-                "id": 4,
-                "type": "message",
-                "channel": channel,
-                "text": 'Request to ' + requestedJobObject.name +
-                ' failed with status code ' + statusCode + '.'
-            });
+            // uncommon error, notify user
+            else {
+                callback({
+                    "id": 4,
+                    "type": "message",
+                    "channel": channel,
+                    "text": 'Request to ' + requestedJobObject.name +
+                    ' failed with status code ' + statusCode + '.'
+                });
+            }
         }
     }, function (res) {
         var statusOptions = {
@@ -378,13 +379,6 @@ function helpDescription () {
 
 function executePlugin (channel, callback, text) {
 
-    /*var jobOptions = {
-        url: 'jenkins.whoop.com/job/JanetTestJobParameterNeeded/build',
-        method: 'POST'
-    };
-
-    core.makeRequest(jobOptions, function (data, statusCode) { console.log ('DATA: ', data); }, function () {});*/
-
     var outputMessage = '';
     var regexp;
 
@@ -439,12 +433,12 @@ function executePlugin (channel, callback, text) {
             });
 
             if (exactMatch) {
-                console.log('PARAMETERS: ', parameters);
                 buildJenkinsJob(exactMatch, channel, callback, parameters);
             }
 
             // if no strict match, look for fuzzy match
             else {
+                console.log('FUZZY MATCH');
                 var inputs = command.split(" ");
 
                 // fold over matches for each keyword until found entries
