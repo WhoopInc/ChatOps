@@ -23,13 +23,8 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
     var postData;
 
     // prepare postData, if parameters passed in
-    if (parameters.length > 0) {
-        //var jsonParametersString = JSON.stringify({"parameter": [parameters]});
-        //var parameterParam = encodeURIComponent(jsonParametersString);
-        //parameters.json = parameterParam;
-
-        postData = JSON.stringify(parameters);
-        console.log('POST DATA: ', postData);
+    if (!_.isEmpty(parameters)) {
+        var postData = JSON.stringify(parameters);
 
         jobOptions.headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -356,11 +351,8 @@ function handleParameters (parametersObj, keyEqualsVal) {
     var key = keyVal[0].trim();
 
     parametersObj[key] = keyVal[1].trim();
-    console.log('PARAMETERS: ', parametersObj);
-}
+    return parametersObj;
 
-function isCallable (text) {
-    return text.includes('jenkins');
 }
 
 
@@ -386,6 +378,13 @@ function helpDescription () {
 
 function executePlugin (channel, callback, text) {
 
+    /*var jobOptions = {
+        url: 'jenkins.whoop.com/job/JanetTestJobParameterNeeded/build',
+        method: 'POST'
+    };
+
+    core.makeRequest(jobOptions, function (data, statusCode) { console.log ('DATA: ', data); }, function () {});*/
+
     var outputMessage = '';
     var regexp;
 
@@ -395,7 +394,7 @@ function executePlugin (channel, callback, text) {
     getFullJobList(function (jobArray) {
 
         // determine if list keyword present
-        var list = /(.*)list$/i.exec(query);
+        var list = /(.*) list$/i.exec(query);
 
         // LIST KEYWORD: bot should list all jobs [containing keyword]
         if (list) {
@@ -411,12 +410,12 @@ function executePlugin (channel, callback, text) {
             var splitText = query.split(" -");
             var command = splitText[0].trim();
 
-            var flagExpression = new RegExp('^([A-Za-z]) *(.*)$');
+            var flagExpression = new RegExp('^([A-Za-z]) +(.*)$');
             var parameters = {};
 
             // traverse non-command terms of array
             for (var i = 1; i < splitText.length; i++) {
-                var found = flagExpression.exec(splitText[i]);
+                var found = flagExpression.exec(splitText[i].trim());
 
                 if (found) {
 
@@ -426,7 +425,7 @@ function executePlugin (channel, callback, text) {
                     var info = found[2];
 
                     if (tag === 'p') {
-                        handleParameters(parameters, info);
+                        parameters = handleParameters(parameters, info);
                     }
                 }
             }

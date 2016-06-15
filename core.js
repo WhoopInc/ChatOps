@@ -56,6 +56,7 @@ function makeRequest (object, callback, responseCB, postData) {
             try {
                 responseContent = JSON.parse(accumulator);
             }
+            // if not object, use accumulator as string
             catch (err) {
                 responseContent = accumulator;
             }
