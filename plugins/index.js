@@ -14,10 +14,13 @@ pluginsFound.forEach(function (plugin) {
 });
 
 var whitelistChannels = ['C1DNMQSCD', // #botdev
-                         'C1BBWJ7PF' // #bottest
+                         'C1BBWJ7PF', // #bottest
+                         'D1F7NU1C1' // @janetchen DM
 ];
 
 function handlePlugins (channel, callback, text, user) {
+
+    // for each whitelisted plugin, check if applicable. if true, execute
     if (_.includes(whitelistChannels, channel)) {
         for (key in plugins) {
             if (plugins[key].isCallable(text)) {
