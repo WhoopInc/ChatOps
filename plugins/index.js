@@ -16,7 +16,8 @@ pluginsFound.forEach(function (plugin) {
 
 // channels bot should listen on, not including DM channels
 var whitelistChannels = ['C1DNMQSCD', // #botdev
-                         'C1BBWJ7PF' // #bottest
+                         'C1BBWJ7PF', // #bottest
+                         'D1F7NU1C1' // @janetchen DM
 ];
 
 

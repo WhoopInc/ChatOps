@@ -27,6 +27,8 @@ function onOpen (soc, channelIDs) {
         alias.fetch();
     });
 
+    dataStore = new ds.DataStore();
+
     channelIDs.forEach(function(id) {
         if (_.includes(whitelistChannels, id)) {
             mb.send({
