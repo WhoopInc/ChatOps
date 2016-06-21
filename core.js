@@ -1,5 +1,7 @@
 var https = require('https');
 var u = require('url');
+var buffer = require('buffer');
+const querystring = require('querystring');
 
 function getAuthByHost (hostname) {
     if (hostname === 'jenkins.whoop.com' || hostname === 'api.github.com') {
@@ -88,6 +90,7 @@ function makeRequest (object, callback, responseCB, postData) {
     });
 
     if (postData) {
+        // convert postData from object to string, then write
         req.write(postData);
     }
 

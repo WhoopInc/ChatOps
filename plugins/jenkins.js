@@ -1,6 +1,14 @@
-var core = require('../core.js');
 const _ = require('lodash');
 var querystring = require('querystring');
+const http = require('http');
+const u = require('url');
+const buffer = require('buffer');
+const xml = require('node-xml');
+
+var core = require('../core.js');
+var ds = require('../datastore.js');
+
+var jenkinsStore = new ds.DataStore();
 
 /* * Given a job object, makes a build request to object's URL and
    * communicates to user on given channel. Checks for failed builds
@@ -8,26 +16,35 @@ var querystring = require('querystring');
    */
 function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
 
+    var urlExp = new RegExp ('^https://jenkins.whoop.com/(.*)/$');
+
     var jobOptions = {
 
-        url: encodeURI(requestedJobObject.url.split('//').pop()) + 'build',
-        method: 'POST'
+        url: requestedJobObject.url.replace(urlExp, '10.25.2.22/$1/build'),
+        method: 'POST',
+        port: 8080
     };
 
     var postData;
 
     // prepare postData, if parameters passed in
     if (!_.isEmpty(parameters)) {
-        var postData = querystring.stringify(parameters);
+        var jsonParametersString = JSON.stringify({"parameter": parameters});
+        var parameterParam = encodeURIComponent(jsonParametersString);
+        parameters.json = parameterParam;
 
         jobOptions.headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': postData.length
+            'Content-Length': querystring.stringify(parameters).length
         };
+
         jobOptions.url += 'WithParameters';
+
+        postData = querystring.stringify(parameters);
     }
 
-    core.makeRequest(jobOptions, function (data, statusCode) {
+    makeRequest(jobOptions, function (data, statusCode) {
+
         if (statusCode === 201) {
             callback({
                 "id": 4,
@@ -64,8 +81,190 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
                 ' failed with status code ' + statusCode + '.'
             });
         }
+    }, function (res) {
+       var statusOptions = {
+            url: res.headers.location.split('//').pop() + 'api/xml',
+            port: 8080
+        };
 
-    }, function () {}, postData);
+       checkJobStatus (statusOptions, callback, channel);
+    }, postData);
+}
+
+function leftJobInfo (callback, channel, checkUrl) {
+    var shortDescription;
+    var fullDisplayName;
+    var result;
+    var duration;
+
+    var outputInfo = {};
+
+    var newOptions = {
+        url: checkUrl + 'api/xml',
+        port: 8080
+    };
+
+    makeRequest(newOptions, function (data) {
+        console.log('LEFT DATA: ', data);
+
+        // catch wanted XML information from data
+        var parser = new xml.SaxParser(function(cb) {
+            cb.onStartElementNS(function(elem) {
+                if (elem === 'result') {
+                    cb.onCharacters(function(chars) {
+                        result = chars;
+                    });
+                }
+
+                if (elem === 'fullDisplayName') {
+                    cb.onCharacters(function(chars) {
+                        fullDisplayName = chars;
+                    });
+                }
+
+                if (elem === 'shortDescription') {
+                    cb.onCharacters(function(chars) {
+                        shortDescription = chars;
+                    });
+                }
+
+                if (elem === 'duration') {
+                    cb.onCharacters(function(chars) {
+                        duration = chars;
+                    });
+                }
+            });
+
+            cb.onEndElementNS(function(elem) {
+                if (elem === 'result') {
+                    outputInfo.result = result;
+                }
+
+                if (elem === 'fullDisplayName') {
+                    outputInfo.fullDisplayName = fullDisplayName;
+                }
+
+                if (elem === 'shortDescription') {
+                    outputInfo.shortDescription = shortDescription;
+                }
+
+                if (elem === 'duration') {
+                    outputInfo.duration = duration;
+                }
+            });
+        });
+
+        parser.parseString(data);
+
+        // make appropriate entry in jenkinsStore
+        if (outputInfo.fullDisplayName &&
+            outputInfo.duration) {
+
+            jenkinsStore.store([outputInfo.fullDisplayName, 'duration', outputInfo.duration]);
+            jenkinsStore.store([outputInfo.fullDisplayName, 'url', checkUrl]);
+
+            if (outputInfo.result) {
+                jenkinsStore.store([outputInfo.fullDisplayName, 'result', outputInfo.result.toString()]);
+
+                if (outputInfo.shortDescription) {
+                    callback({
+                        "id": 4,
+                        "type": "message",
+                        "channel": channel,
+                        "text": outputInfo.fullDisplayName + ' (' +
+                        outputInfo.shortDescription + ') finished with result ' +
+                        outputInfo.result + ' after ' + outputInfo.duration
+                    });
+                }
+            }
+            else {
+                jenkinsStore.store([outputInfo.fullDisplayName, 'result', 'null']);
+            }
+        }
+    }, function (res) {});
+}
+
+
+function checkJobStatus (options, callback, channel, checkUrl) {
+
+    // while <waitingItem>
+    if (!checkUrl) {
+        var name;
+        var shortDescription;
+        var outputInfo = {};
+
+        makeRequest(options, function (data) {
+            console.log('DATA: ', data);
+
+            var parser = new xml.SaxParser(function(cb) {
+                    cb.onStartElementNS(function(elem) {
+                        if (elem === 'name') {
+                            cb.onCharacters(function(chars) {
+                                name = chars;
+                            })
+                        }
+
+                        if (elem === 'shortDescription') {
+                            cb.onCharacters(function(chars) {
+                                shortDescription = chars;
+                            })
+                        }
+
+                        if (elem === 'executable') {
+                            cb.onStartElementNS(function(elem) {
+                                if (elem === 'url') {
+                                    cb.onCharacters(function(chars) {
+                                        var urlExp = new RegExp ('^https://jenkins.whoop.com/(.*)$');
+
+                                        checkUrl = chars.replace(urlExp, '10.25.2.22/$1');
+
+                                        outputInfo.checkUrl = checkUrl;
+
+                                        console.log('FOUND URL: ', checkUrl);
+                                    });
+                                }
+                            });
+                        }
+                    });
+
+                    cb.onEndElementNS(function (elem) {
+                        if (elem === 'name') {
+                            outputInfo.name = name;
+                        }
+
+                        if (elem === 'shortDescription') {
+                            outputInfo.shortDescription = shortDescription;
+                        }
+                    });
+                });
+
+                parser.parseString(data);
+
+                if (outputInfo.name && outputInfo.shortDescription &&
+                    outputInfo.checkUrl) {
+                    callback({
+                        "id": 4,
+                        "type": "message",
+                        "channel": channel,
+                        "text": outputInfo.name + ' (' +
+                        outputInfo.shortDescription
+                        + ') left the queue.'
+                    });
+
+                    checkJobStatus(options, callback, channel, outputInfo.checkUrl);
+                }
+
+            if (!checkUrl) {
+                checkJobStatus(options, callback, channel);
+            }
+
+        }, function (res) {});
+    }
+
+    // called once after item leaves queue
+    else {
+        leftJobInfo(callback, channel, outputInfo.checkUrl)
+    }
 }
 
 /* * Retrieves list of all jenkins jobs, prepares to manipulate list.
@@ -155,7 +354,8 @@ function handleParameters (parametersObj, keyEqualsVal) {
     var keyVal = keyEqualsVal.split("=");
     var key = keyVal[0].trim();
     parametersObj[key] = keyVal[1].trim();
-    console.log('PARAMETERS: ', parametersObj);
+    console.log('PARAMETERS in handleParameters: ', parametersObj);
+    return parametersObj;
 }
 
 function isCallable (text) {
@@ -193,6 +393,7 @@ function helpDescription () {
    * Commands without
    * keywords attempt to execute a jenkins job.
    */
+
 function executePlugin (channel, callback, text) {
 
     var outputMessage = '';
@@ -292,6 +493,149 @@ function executePlugin (channel, callback, text) {
             }
         }
     });
+}
+
+// function getTagContents (tagArr, data) {
+//     var tempVars = new Array(tagArr.length);
+//     var outputInfo = {};
+//     var parser = new xml.SaxParser(function(cb) {
+//         cb.onStartElementNS(function(elem) {
+//             tagArr.forEach(function(tag, index) {
+//                 if (elem === tag) {
+//                     cb.onCharacters(function(chars) {
+//                         tempVars[index] = chars;
+//                     });
+//                 }
+//             })
+//         });
+//         cb.onEndElementNS(function(elem) {
+//             tagArr.forEach(function(tag, index) {
+//                 if (elem === tag) {
+//                     cb.onCharacters(function(chars) {
+//                         outputInfo.tag = tempVars[index];
+//                     });
+//                 }
+//             })
+//         });
+//     };
+
+//     parser.parseString(data);
+// }
+
+function updateNulls (msgCB) {
+    var nullResults = [];
+
+    // retrieve builds with null results from jenkinsStore
+    _.forEach(this.dataStore, function (value, key) {
+        if (value[result] !== 'SUCCESS' && value[result] !== 'FAILURE') {
+            nullResults.push({ "name": key, "url": value[url] });
+        }
+    });
+
+    if (nullResults.length > 0) {
+        nullResults.forEach(function(build) {
+            makeRequest( { url: build.url + 'api/xml' }, function (data) {
+
+            });
+        });
+    }
+}
+
+function makeRequest (object, callback, responseCB, postData) {
+    var accumulator = '';
+
+    var parsedUrl = u.parse('//' + object.url, true, true);
+
+    var options = {
+        hostname: parsedUrl.hostname,
+        port: object.port || 8080,
+        path: parsedUrl.path,
+        method: object.method || 'GET',
+        auth: getAuthByHost(parsedUrl.hostname)
+    };
+
+    if (object.headers) {
+        options.headers = object.headers;
+    }
+
+    if (options.hostname === 'api.github.com') {
+
+        if (!object.headers) {
+            options.headers = {'User-Agent': 'WhoopInc'};
+        }
+        else if (!object.headers['User-Agent']) {
+            options.headers['User-Agent'] = 'WhoopInc';
+        }
+    }
+
+    console.log('OPTIONS: ', options);
+
+    var response = null;
+    var req = http.request(options, function(res) {
+        response = res;
+
+        res.on('data', function (data) {
+            accumulator = accumulator + data.toString();
+            res.resume();
+        });
+
+        res.on('close', function () {
+            // first assume accumulator is JSON object
+            var responseContent;
+            try {
+                responseContent = JSON.parse(accumulator);
+            }
+            // if not object, use accumulator as string
+            catch (err) {
+                responseContent = accumulator;
+            }
+
+            callback(responseContent, response.statusCode);
+
+
+            if (responseCB) {
+                responseCB(res);
+            }
+
+        });
+    });
+
+    req.on('close', function () {
+        console.log('RESPONSE CODE: ', response.statusCode);
+        //console.log('ACCUMULATOR: ', accumulator);
+
+        // first assume accumulator is JSON object
+        var responseContent;
+        try {
+            responseContent = JSON.parse(accumulator);
+        }
+        catch (err) {
+            responseContent = accumulator;
+        }
+
+        callback(responseContent, response.statusCode);
+
+        if (responseCB) {
+            responseCB(response);
+        }
+
+    });
+
+    if (postData) {
+        console.log('PARAMETERS in makeRequest: ', postData);
+        // convert postData from object to string, then write
+        req.write(postData);
+    }
+
+    req.end();
+}
+
+function getAuthByHost (hostname) {
+    if (hostname === 'jenkins.whoop.com' || hostname === 'api.github.com' ||
+        hostname === '10.25.2.22') {
+        return process.env.GITHUB_USERNAME + ':' +
+        process.env.GITHUB_API_TOKEN;
+    }
 }
 
 module.exports = {
