@@ -166,6 +166,10 @@ function isCallable (text) {
     return text.includes('jenkins');
 }
 
+function isCallable (text) {
+    return text.includes('jenkins');
+}
+
 
 function helpDescription () {
     return '_JENKINS_\nSend *jenkins [keyword] list* to list jenkins' +
