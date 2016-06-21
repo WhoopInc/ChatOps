@@ -27,9 +27,14 @@ MessageBroker.prototype.init = function () {
 var messageBroker;
 
 function initialize(sock) {
-    messageBroker = new MessageBroker(sock);
+    if (!messageBroker) {
+        messageBroker = new MessageBroker(sock);
+        messageBroker.init();
+    }
+    else {
+        throw "messageBroker already exists";
+    }
 
-    messageBroker.init();
 }
 
 function send(item) {
@@ -37,7 +42,7 @@ function send(item) {
         messageBroker.push(item);
     }
     else {
-        throw "messageBroker disconnected"
+        throw "messageBroker disconnected";
     }
 
 }

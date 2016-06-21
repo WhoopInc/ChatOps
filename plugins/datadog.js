@@ -189,7 +189,7 @@ function updateAlerts (optionalCB) {
 function helpDescription () {
     return '_DATADOG_\nSend *get datadog* to see Datadog alerts, warnings, and claimed status.\n' +
     'Send *datadog claim [ID]* to claim a monitor or datadog unclaim [ID] to ' +
-    'unclaim a monitor. Use *get datadog* to see monitor IDs.'
+    'unclaim a monitor. Use *get datadog* to see monitor IDs.';
 }
 
 module.exports = {
