@@ -112,7 +112,7 @@ function leftJobInfo (callback, channel, checkUrl) {
             cb.onStartElementNS(function(elem) {
                 if (elem === 'result') {
                     cb.onCharacters(function(chars) {
-                        result = chars;
+                        result = chars
                     });
                 }
 
@@ -494,33 +494,6 @@ function executePlugin (channel, callback, text) {
         }
     });
 }
-
-// function getTagContents (tagArr, data) {
-//     var tempVars = new Array(tagArr.length);
-//     var outputInfo = {};
-//     var parser = new xml.SaxParser(function(cb) {
-//         cb.onStartElementNS(function(elem) {
-//             tagArr.forEach(function(tag, index) {
-//                 if (elem === tag) {
-//                     cb.onCharacters(function(chars) {
-//                         tempVars[index] = chars;
-//                     });
-//                 }
-//             })
-//         });
-//         cb.onEndElementNS(function(elem) {
-//             tagArr.forEach(function(tag, index) {
-//                 if (elem === tag) {
-//                     cb.onCharacters(function(chars) {
-//                         outputInfo.tag = tempVars[index];
-//                     });
-//                 }
-//             })
-//         });
-//     };
-
-//     parser.parseString(data);
-// }
 
 function updateNulls (msgCB) {
     var nullResults = [];
