@@ -164,6 +164,13 @@ function updateAlerts (optionalCB) {
             }
         });
 
+        var store = datadogStore.getAll();
+        for (monitorID in store) {
+            if (dataStore[monitorID]["state"] === 'OK') {
+                datadogStore.remove([monitorID]);
+            }
+        }
+
         if (optionalCB) {
             optionalCB(datadogStore);
         }

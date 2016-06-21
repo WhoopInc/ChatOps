@@ -178,7 +178,7 @@ module.exports = {
         "radix": "error",
         "require-jsdoc": "off",
         "require-yield": "error",
-        "semi": "error",
+        "semi": ["error", "always"],
         "semi-spacing": "error",
         "sort-imports": "error",
         "sort-vars": "error",
