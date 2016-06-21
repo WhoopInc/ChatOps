@@ -24,6 +24,24 @@ MessageBroker.prototype.init = function () {
     setInterval(this.sendMessage.bind(this), 1500);
 };
 
+var messageBroker;
+
+function initialize(sock) {
+    messageBroker = new MessageBroker(sock);
+
+    messageBroker.init();
+}
+
+function send(item) {
+    messageBroker.push(item);
+}
+
+function destroy() {
+    messageBroker = undefined;
+}
+
 module.exports = {
-    MessageBroker: MessageBroker
+    initialize: initialize,
+    send: send,
+    destroy: destroy
 };
