@@ -1,8 +1,9 @@
 const _ = require('lodash');
 require('dotenv').config({silent: true});
 
-var core = require('../core.js');
+const core = require('../core.js');
 const ds = require('../datastore.js');
+const mb = require('../messagebroker.js');
 
 var datadogStore = new ds.DataStore();
 
@@ -166,7 +167,7 @@ function updateAlerts (optionalCB) {
 
         var store = datadogStore.getAll();
         for (monitorID in store) {
-            if (dataStore[monitorID]["state"] === 'OK') {
+            if (store[monitorID]["state"] === 'OK') {
                 datadogStore.remove([monitorID]);
             }
         }
