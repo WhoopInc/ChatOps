@@ -85,6 +85,7 @@ function initializeWebSocket(data) {
                 "text": "WhoopBot " + process.env.VERSION +
                     " disconnected from WebSocket."
             });
+            mb.destroy();
         });
     });
 
@@ -97,6 +98,7 @@ function initializeWebSocket(data) {
                 "text": "WhoopBot " + process.env.VERSION +
                     " disconnected, received SIGTERM."
             });
+            mb.destroy();
         });
     });
 

@@ -33,7 +33,13 @@ function initialize(sock) {
 }
 
 function send(item) {
-    messageBroker.push(item);
+    if (messageBroker) {
+        messageBroker.push(item);
+    }
+    else {
+        throw "messageBroker disconnected"
+    }
+
 }
 
 function destroy() {
