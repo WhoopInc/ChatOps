@@ -14,7 +14,7 @@ function executePlugin (channel, callback, text) {
                 '507', '508', '509',
                 /* '510', '511',  */ '599'];
 
-    var contextClues = ['what', 'what\'s', '?', 'mean'];
+    var contextClues = ['what', 'what\'s', '?'];
 
     var foundCodes = [];
 

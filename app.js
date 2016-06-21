@@ -4,11 +4,10 @@ const _ = require('lodash');
 
 const core = require('./core.js');
 const mb = require('./messagebroker.js');
+const ds = require('./datastore.js');
 
 const plugins = require('./plugins/index.js');
 
-
-var msgBroker;
 
 var whitelistChannels = ['C1DNMQSCD', // #botdev
                          'C1BBWJ7PF' // #bottest
@@ -17,13 +16,13 @@ var whitelistChannels = ['C1DNMQSCD', // #botdev
 // when socket opens, notify channel
 function onOpen (soc, channelIDs) {
 
-    msgBroker = new mb.MessageBroker(soc);
+    mb.initialize(soc);
 
-    msgBroker.init();
+    dataStore = new ds.DataStore();
 
     channelIDs.forEach(function(id) {
         if (_.includes(whitelistChannels, id)) {
-            msgBroker.push({
+            mb.send({
                 "id": 1,
                 "type": "message",
                 "channel": id,
@@ -46,7 +45,7 @@ function onEvent (event, soc) {
         if (!core.ignoreEvent(ev)) {
 
             plugins.handlePlugins(ev.channel, function (res) {
-                msgBroker.push(res);
+                mb.send(res);
             }, ev.text, ev.user);
         }
     }
@@ -79,7 +78,7 @@ function initializeWebSocket(data) {
     socket.on('close', function close() {
         //console.log('disconnected');
         memberChannels.forEach(function (channelID) {
-            msgBroker.push({
+            mb.send({
                 "id": 1,
                 "type": "message",
                 "channel": channelID,
@@ -91,7 +90,7 @@ function initializeWebSocket(data) {
 
     process.once('SIGTERM', function () {
         memberChannels.forEach(function (channelID) {
-            msgBroker.push({
+            mb.send({
                 "id": 1,
                 "type": "message",
                 "channel": channelID,

@@ -12,7 +12,8 @@ var template = fs.readFileSync('./ecs-task-template.mustache', options);
 var view = {};
 
 view.env = _.chain(process.env)
-.pick(process.env, ['SLACK_API_TOKEN', 'GITHUB_API_TOKEN', 'GITHUB_USERNAME', 'VERSION'])
+.pick(process.env, ['SLACK_API_TOKEN', 'GITHUB_API_TOKEN', 'GITHUB_USERNAME',
+    'DATADOG_API_KEY', 'DATADOG_APP_KEY'])
 .reduce(function (acc, value, key) {
     (acc || (acc = [])).push({ "name": key, "value": value, "comma": true });
     return acc;
