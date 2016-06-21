@@ -4,6 +4,10 @@ require('dotenv').config({silent: true});
 var core = require('../core.js');
 const ds = require('../datastore.js');
 
+var datadogStore = new ds.DataStore();
+
+setInterval(updateAlerts, 600000);
+
 function isCallable (text) {
     return text.includes('datadog');
 }
@@ -16,22 +20,24 @@ function executePlugin (channel, callback, text, user) {
 
     // if text is "get datadog", get all monitor details using API
     if (isGet === "get") {
-        var groupStates = 'alert,warn';
 
-        var options = {
-            'url': 'app.datadoghq.com/api/v1/monitor?api_key=' +
-            process.env.DATADOG_API_KEY + '&application_key=' +
-            process.env.DATADOG_APP_KEY //+ '&group_states=' + groupStates
-        };
+        updateAlerts(function (datadogStore) {
+            var dataStore = datadogStore.getAll();
 
-        core.makeRequest (options, function (data, code) {
-            data.forEach(function(monitor) {
+            for (monitorID in dataStore) {
                 // accumulate monitor details in outputMessage
-                if (monitor.overall_state && monitor.overall_state !== 'OK') {
-                    outputMessage += monitor.name + ' has state ' +
-                monitor.overall_state + ' (ID: ' + monitor.id + ')\n';
+                outputMessage += dataStore[monitorID]["name"] + ' has state ' +
+                dataStore[monitorID]["state"] + ' (ID: ' + monitorID + '). ';
+
+                if (dataStore[monitorID]["claimed"] && dataStore[monitorID]["claimed"] !== "none") {
+                    outputMessage += 'Claimed by ' + dataStore[monitorID]["claimed"] + '.\n';
                 }
-            });
+                else {
+                    outputMessage += 'Unclaimed.\n'
+                }
+
+                outputMessage += dataStore[monitorID]["url"] + '\n';
+            };
 
             callback({
                 "id": 6,
@@ -40,6 +46,16 @@ function executePlugin (channel, callback, text, user) {
                 "text": outputMessage
             });
         });
+    }
+
+    // check for, handle "unclaim" command
+    else if (isClaim.includes('unclaim')) {
+        // get ID of monitor
+        var monitorID = isClaim.split('claim')[1].trim();
+
+        if (datadogStore.get([monitorID])) {
+            datadogStore.store([monitorID, 'claimed', 'none']);
+        }
     }
 
     // if not "get datadog", check for "datadog claim" command
@@ -107,9 +123,7 @@ function executePlugin (channel, callback, text, user) {
                     else {
                         // error message
                     }
-
                 }
-
 
                 else {
                     console.log('GETTING LINKWITHID FAILED');
@@ -119,14 +133,53 @@ function executePlugin (channel, callback, text, user) {
 
         // handle "claim ID"
         else {
-
+            if (datadogStore.get([claimType])) {
+                datadogStore.store([claimType, "claimed", user]);
+            }
         }
     }
 }
 
+function updateAlerts (optionalCB) {
+    var options = {
+        'url': 'app.datadoghq.com/api/v1/monitor?api_key=' +
+        process.env.DATADOG_API_KEY + '&application_key=' +
+        process.env.DATADOG_APP_KEY
+    };
+
+    core.makeRequest (options, function (data, code) {
+
+        data.forEach(function(monitor) {
+
+            if (monitor.overall_state && monitor.overall_state !== 'OK') {
+
+                datadogStore.store([monitor.id, 'state', monitor.overall_state.toString()]);
+                datadogStore.store([monitor.id, 'name', monitor.name.toString()]);
+                datadogStore.store([monitor.id, 'url', 'https://app.datadoghq.com/monitors#' + monitor.id]);
+
+                if (!datadogStore.get([monitor.id])) {
+                    datadogStore.store([monitor.id, 'claimed', 'none']);
+                }
+
+            }
+        });
+
+        if (optionalCB) {
+            optionalCB(datadogStore);
+        }
+    });
+}
+
+function helpDescription () {
+    return '_DATADOG_\nSend *get datadog* to see Datadog alerts, warnings, and claimed status.\n' +
+    'Send *datadog claim [ID]* to claim a monitor or datadog unclaim [ID] to ' +
+    'unclaim a monitor. Use *get datadog* to see monitor IDs.'
+}
+
 module.exports = {
     isCallable: isCallable,
-    executePlugin: executePlugin
+    executePlugin: executePlugin,
+    helpDescription: helpDescription
 };
 
 

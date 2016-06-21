@@ -25,7 +25,6 @@ function handlePlugins (channel, callback, text, user) {
         for (key in plugins) {
             if (plugins[key].isCallable(text)) {
                 plugins[key].executePlugin(channel, callback, text, user);
-                break;
             }
         }
     }
