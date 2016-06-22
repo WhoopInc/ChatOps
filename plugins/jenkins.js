@@ -4,6 +4,7 @@ const http = require('http');
 const u = require('url');
 const buffer = require('buffer');
 const xml = require('node-xml');
+const FormData = require('form-data');
 
 var core = require('../core.js');
 var ds = require('../datastore.js');
@@ -25,22 +26,28 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         port: 8080
     };
 
-    var postData;
+    //var postData;
+    //var form;
 
     // prepare postData, if parameters passed in
     if (!_.isEmpty(parameters)) {
-        var jsonParametersString = JSON.stringify({"parameter": parameters});
-        var parameterParam = encodeURIComponent(jsonParametersString);
-        parameters.json = parameterParam;
+        // var jsonParametersString = JSON.stringify({"parameter": parameters});
+        // var parameterParam = encodeURIComponent(jsonParametersString);
+        // parameters.json = parameterParam;
 
-        jobOptions.headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': querystring.stringify(parameters).length
+        // jobOptions.headers = {
+        //     'Content-Type': 'application/x-www-form-urlencoded'
+        // };
+
+        jobOptions.url += 'WithParameters?';
+
+        //form = new FormData();
+        for (key in parameters) {
+            //form.append(key, parameters[key].toString());
+            jobOptions.url += encodeURIComponent(key) + '=' + encodeURIComponent(parameters[key]) + '&';
         };
 
-        jobOptions.url += 'WithParameters';
-
-        postData = querystring.stringify(parameters);
+        //postData = querystring.stringify(parameters);
     }
 
     makeRequest(jobOptions, function (data, statusCode) {
@@ -88,7 +95,7 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         };
 
        checkJobStatus (statusOptions, callback, channel);
-    }, postData);
+    });
 }
 
 function leftJobInfo (callback, channel, checkUrl) {
@@ -186,12 +193,12 @@ function leftJobInfo (callback, channel, checkUrl) {
 
 
 function checkJobStatus (options, callback, channel, checkUrl) {
+    var outputInfo = {};
 
     // while <waitingItem>
     if (!checkUrl) {
         var name;
         var shortDescription;
-        var outputInfo = {};
 
         makeRequest(options, function (data) {
             console.log('DATA: ', data);
@@ -263,7 +270,7 @@ function checkJobStatus (options, callback, channel, checkUrl) {
 
     // called once after item leaves queue
     else {
-        leftJobInfo(callback, channel, outputInfo.checkUrl)
+        leftJobInfo(callback, channel, checkUrl)
     }
 }
 
@@ -366,17 +373,13 @@ function isCallable (text) {
     return text.includes('jenkins');
 }
 
-function isCallable (text) {
-    return text.includes('jenkins');
-}
-
 
 function helpDescription () {
     return '_JENKINS_\nSend *jenkins [keyword] list* to list jenkins' +
     ' jobs with specified keyword in name.\n' +
     'Send *jenkins [job name]* to build a jenkins job. If the job name is ' +
     'not exactly correct, bot will attempt to fuzzy match it to the correct '
-    + 'job.'
+    + 'job.\n Send *jenkins [job name] -p KEY=value* to build a job with parameters';
 }
 
 
@@ -514,7 +517,7 @@ function updateNulls (msgCB) {
     }
 }
 
-function makeRequest (object, callback, responseCB, postData) {
+function makeRequest (object, callback, responseCB, form) {
     var accumulator = '';
 
     var parsedUrl = u.parse('//' + object.url, true, true);
@@ -594,10 +597,10 @@ function makeRequest (object, callback, responseCB, postData) {
 
     });
 
-    if (postData) {
-        console.log('PARAMETERS in makeRequest: ', postData);
+    if (form) {
+        console.log('FORM: ', form);
         // convert postData from object to string, then write
-        req.write(postData);
+        form.pipe(req);
     }
 
     req.end();
