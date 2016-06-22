@@ -12,12 +12,11 @@ var jenkinsStore = new ds.DataStore();
    */
 function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
 
-    var urlExp = new RegExp('^https://jenkins.whoop.com/(.*)/$');
+    var urlExp = new RegExp('^https://(jenkins.whoop.com/.*)/$');
 
     var jobOptions = {
-        url: requestedJobObject.url.replace(urlExp, '10.25.2.22/$1/build'),
-        method: 'POST',
-        port: 8080
+        url: requestedJobObject.url.replace(urlExp, '$1/build'),
+        method: 'POST'
     };
 
 
@@ -41,7 +40,7 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         //postData = querystring.stringify(parameters);
     }
 
-    core.makehttpRequest(jobOptions, function (data, statusCode) {
+    core.makeRequest(jobOptions, function (data, statusCode) {
 
         if (statusCode === 201) {
             callback({
@@ -81,8 +80,7 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         }
     }, function (res) {
         var statusOptions = {
-            url: res.headers.location.split('//').pop() + 'api/xml',
-            port: 8080
+            url: res.headers.location.split('//').pop() + 'api/xml'
         };
 
         checkJobStatus(statusOptions, callback, channel);
@@ -98,11 +96,10 @@ function leftJobInfo (callback, channel, checkUrl) {
     var outputInfo = {};
 
     var newOptions = {
-        url: checkUrl + 'api/xml',
-        port: 8080
+        url: checkUrl + 'api/xml'
     };
 
-    core.makehttpRequest(newOptions, function (data) {
+    core.makeRequest(newOptions, function (data) {
 
         // catch wanted XML information from data
         var parser = new xml.SaxParser(function(cb) {
@@ -194,7 +191,7 @@ function checkJobStatus (options, callback, channel, checkUrl) {
         var name;
         var shortDescription;
 
-        core.makehttpRequest(options, function (data) {
+        core.makeRequest(options, function (data) {
 
             var parser = new xml.SaxParser(function(cb) {
                 cb.onStartElementNS(function(elem) {
@@ -215,14 +212,11 @@ function checkJobStatus (options, callback, channel, checkUrl) {
                             if (eleme === 'url') {
                                 cb.onCharacters(function(chars) {
                                     var urlExp = new RegExp
-                                    ('^https://jenkins.whoop.com/(.*)$');
+                                    ('^https://(jenkins.whoop.com/.*)$');
 
-                                    checkUrl = chars.replace(urlExp,
-                                        '10.25.2.22/$1');
+                                    checkUrl = chars.replace(urlExp, '$1');
 
                                     outputInfo.checkUrl = checkUrl;
-
-                                    console.log('FOUND URL: ', checkUrl);
                                 });
                             }
                         });
@@ -495,7 +489,7 @@ function updateNulls (msgCB) {
 
     if (nullResults.length > 0) {
         nullResults.forEach(function(build) {
-            core.makehttpRequest({url: build.url + 'api/xml'},
+            core.makeRequest({url: build.url + 'api/xml'},
                 function (data) {
 
                 });
