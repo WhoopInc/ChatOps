@@ -24,6 +24,35 @@ MessageBroker.prototype.init = function () {
     setInterval(this.sendMessage.bind(this), 1500);
 };
 
+var messageBroker;
+
+function initialize(sock) {
+    if (!messageBroker) {
+        messageBroker = new MessageBroker(sock);
+        messageBroker.init();
+    }
+    else {
+        throw "messageBroker already exists";
+    }
+
+}
+
+function send(item) {
+    if (messageBroker) {
+        messageBroker.push(item);
+    }
+    else {
+        throw "messageBroker disconnected";
+    }
+
+}
+
+function destroy() {
+    messageBroker = undefined;
+}
+
 module.exports = {
-    MessageBroker: MessageBroker
+    initialize: initialize,
+    send: send,
+    destroy: destroy
 };

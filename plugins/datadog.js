@@ -7,12 +7,8 @@ const mb = require('../messagebroker.js');
 const users = require('../users.js');
 
 var datadogStore = new ds.DataStore();
-
 setInterval(updateAlerts, 600000);
 
-var datadogStore = new ds.DataStore();
-
-setInterval(updateAlerts, 600000);
 
 function isCallable (text) {
     return text.includes('datadog');
@@ -36,6 +32,7 @@ function executePlugin (channel, callback, text, user) {
                 dataStore[monitorID]["state"] + ' (ID: ' + monitorID + '). ';
 
                 if (dataStore[monitorID]["claimed"] && dataStore[monitorID]["claimed"] !== "none") {
+
                     var alias = users.getSingleUserName(dataStore[monitorID]["claimed"])
                     if (alias) {
                         outputMessage += 'Claimed by ' + users.getSingleUserName(dataStore[monitorID]["claimed"]) + '.\n';
@@ -192,7 +189,7 @@ function updateAlerts (optionalCB) {
 function helpDescription () {
     return '_DATADOG_\nSend *get datadog* to see Datadog alerts, warnings, and claimed status.\n' +
     'Send *datadog claim [ID]* to claim a monitor or datadog unclaim [ID] to ' +
-    'unclaim a monitor. Use *get datadog* to see monitor IDs.'
+    'unclaim a monitor. Use *get datadog* to see monitor IDs.';
 }
 
 module.exports = {

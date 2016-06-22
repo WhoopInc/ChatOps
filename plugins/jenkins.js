@@ -364,10 +364,6 @@ function isCallable (text) {
     return text.includes('jenkins');
 }
 
-function isCallable (text) {
-    return text.includes('jenkins');
-}
-
 
 function helpDescription () {
     return '_JENKINS_\nSend *jenkins [keyword] list* to list jenkins' +
@@ -375,15 +371,6 @@ function helpDescription () {
     'Send *jenkins [job name]* to build a jenkins job. If the job name is ' +
     'not exactly correct, bot will attempt to fuzzy match it to the correct '
     + 'job.\n Send *jenkins [job name] -p KEY=value* to build a job with parameters';
-}
-
-
-function helpDescription () {
-    return '_JENKINS_\nSend *jenkins [keyword] list* to list jenkins' +
-    ' jobs with specified keyword in name.\n' +
-    'Send *jenkins [job name]* to build a jenkins job. If the job name is ' +
-    'not exactly correct, bot will attempt to fuzzy match it to the correct '
-    + 'job.'
 }
 
 

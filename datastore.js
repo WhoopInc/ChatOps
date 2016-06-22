@@ -48,15 +48,11 @@ DataStore.prototype.get = function (keys) {
 DataStore.prototype.remove = function (keys) {
     var current = this.dataStore;
 
-    if (!lo.has(this.dataStore, keys)) {
+    if (!_.has(this.dataStore, keys)) {
         console.log('BAD KEY TO DS.REMOVE');
     }
     else {
         for (var i = 0; i < keys.length - 1; i++) {
-
-            if (!current[keys[i]]) {
-                console.log('BAD KEYS TO DS.GET');
-            }
 
             current = current[keys[i]];
         }
