@@ -1,5 +1,31 @@
 var core = require('../core.js');
 
+
+function isCallable (text) {
+    return text.trim() === 'get github';
+}
+
+
+function helpDescription () {
+    return '_GITHUB_\nSend *get github* to retrieve a list of all open pull requests.';
+}
+
+
+function countOpenPR (prArray) {
+
+    var prCounter = 0;
+
+    // for each pull request per repository, count if open
+    prArray.forEach(function (pullrequest) {
+        if (pullrequest.state === "open") {
+            prCounter++;
+        }
+    });
+
+    return prCounter;
+}
+
+
 // get repositories, output string of repo data
 function executePlugin (channel, callback) {
 
@@ -47,28 +73,7 @@ function executePlugin (channel, callback) {
     });
 }
 
-function countOpenPR (prArray) {
 
-    var prCounter = 0;
-
-    // for each pull request per repository, count if open
-    prArray.forEach(function (pullrequest) {
-        if (pullrequest.state === "open") {
-            prCounter++;
-        }
-    });
-
-    return prCounter;
-}
-
-
-function isCallable (text) {
-    return text.trim() === 'get github';
-}
-
-function helpDescription () {
-    return '_GITHUB_\nSend *get github* to retrieve a list of all open pull requests.';
-}
 
 module.exports = {
     isCallable: isCallable,

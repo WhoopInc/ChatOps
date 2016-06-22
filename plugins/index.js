@@ -19,7 +19,6 @@ var whitelistChannels = ['C1DNMQSCD', // #botdev
 ];
 
 // add im channels
-
 var options = {
     url: 'slack.com/api/im.list?token=' + process.env.SLACK_API_TOKEN
 };
@@ -30,7 +29,6 @@ core.makeRequest(options, function(data) {
         if (channel.user !== 'USLACKBOT') {
             whitelistChannels.push(channel.id);
         }
-
     });
 });
 

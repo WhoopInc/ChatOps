@@ -18,8 +18,6 @@ function onOpen (soc, channelIDs) {
 
     mb.initialize(soc);
 
-    dataStore = new ds.DataStore();
-
     channelIDs.forEach(function(id) {
         if (_.includes(whitelistChannels, id)) {
             mb.send({

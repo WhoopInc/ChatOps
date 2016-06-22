@@ -1,10 +1,10 @@
-var https = require('https');
-var u = require('url');
-var buffer = require('buffer');
-const querystring = require('querystring');
+const https = require('https');
+const http = require('http');
+const u = require('url');
 
 function getAuthByHost (hostname) {
-    if (hostname === 'jenkins.whoop.com' || hostname === 'api.github.com') {
+    if (hostname === 'jenkins.whoop.com' || hostname === 'api.github.com' ||
+        hostname === '10.25.2.22') {
         return process.env.GITHUB_USERNAME + ':' +
         process.env.GITHUB_API_TOKEN;
     }
@@ -97,6 +97,92 @@ function makeRequest (object, callback, responseCB, postData) {
     req.end();
 }
 
+function makehttpRequest (object, callback, responseCB, postData) {
+    var accumulator = '';
+
+    var parsedUrl = u.parse('//' + object.url, true, true);
+
+    var options = {
+        hostname: parsedUrl.hostname,
+        port: object.port || 8080,
+        path: parsedUrl.path,
+        method: object.method || 'GET',
+        auth: getAuthByHost(parsedUrl.hostname)
+    };
+
+    if (object.headers) {
+        options.headers = object.headers;
+    }
+
+    if (options.hostname === 'api.github.com') {
+
+        if (!object.headers) {
+            options.headers = {'User-Agent': 'WhoopInc'};
+        }
+        else if (!object.headers['User-Agent']) {
+            options.headers['User-Agent'] = 'WhoopInc';
+        }
+    }
+
+    console.log('OPTIONS: ', options);
+
+    var response = null;
+    var req = http.request(options, function(res) {
+        response = res;
+
+        res.on('data', function (data) {
+            accumulator = accumulator + data.toString();
+            res.resume();
+        });
+
+        res.on('close', function () {
+            // first assume accumulator is JSON object
+            var responseContent;
+            try {
+                responseContent = JSON.parse(accumulator);
+            }
+            // if not object, use accumulator as string
+            catch (err) {
+                responseContent = accumulator;
+            }
+
+            callback(responseContent, response.statusCode);
+
+
+            if (responseCB) {
+                responseCB(res);
+            }
+
+        });
+    });
+
+    req.on('close', function () {
+        console.log('RESPONSE CODE: ', response.statusCode);
+
+        // first assume accumulator is JSON object
+        var responseContent;
+        try {
+            responseContent = JSON.parse(accumulator);
+        }
+        catch (err) {
+            responseContent = accumulator;
+        }
+
+        callback(responseContent, response.statusCode);
+
+        if (responseCB) {
+            responseCB(response);
+        }
+
+    });
+
+    if (postData) {
+        req.write(postData);
+    }
+
+    req.end();
+}
+
 
 function ignoreEvent (event) {
     if (event.username && event.username === "slackbot") {
@@ -147,6 +233,7 @@ function paginate (options, callback) {
 
 module.exports = {
     makeRequest: makeRequest,
+    makehttpRequest: makehttpRequest,
     ignoreEvent: ignoreEvent,
     paginate: paginate
 };

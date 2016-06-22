@@ -1,9 +1,7 @@
-const _ = require('lodash');
 require('dotenv').config({silent: true});
 
 const core = require('../core.js');
 const ds = require('../datastore.js');
-const mb = require('../messagebroker.js');
 const users = require('../users.js');
 
 var datadogStore = new ds.DataStore();
@@ -14,6 +12,96 @@ function isCallable (text) {
     return text.includes('datadog');
 }
 
+function helpDescription () {
+    return '_DATADOG_\nSend *get datadog* to see Datadog alerts, warnings, ' +
+    'and claimed status.\nSend *datadog claim [ID]* to claim a monitor or ' +
+    'datadog unclaim [ID] to unclaim a monitor. Use *get datadog* to see ' +
+    'monitor IDs.';
+}
+
+function updateAlerts (optionalCB) {
+    var options = {
+        'url': 'app.datadoghq.com/api/v1/monitor?api_key=' +
+        process.env.DATADOG_API_KEY + '&application_key=' +
+        process.env.DATADOG_APP_KEY
+    };
+
+    core.makeRequest (options, function (data, code) {
+
+        data.forEach(function(monitor) {
+
+            if (monitor.overall_state && monitor.overall_state !== 'OK') {
+
+                datadogStore.store([monitor.id, 'state',
+                    monitor.overall_state.toString()]);
+                datadogStore.store([monitor.id, 'name',
+                    monitor.name.toString()]);
+                datadogStore.store([monitor.id, 'url',
+                    'https://app.datadoghq.com/monitors#' + monitor.id]);
+
+                if (!datadogStore.get([monitor.id])) {
+                    datadogStore.store([monitor.id, 'claimed', 'none']);
+                }
+
+            }
+        });
+
+        var store = datadogStore.getAll();
+        for (monitorID in store) {
+            if (store[monitorID]["state"] === 'OK') {
+                datadogStore.remove([monitorID]);
+            }
+        }
+
+        if (optionalCB) {
+            optionalCB(datadogStore);
+        }
+    });
+}
+
+function getDatadog (outputMessage, callback, channel) {
+    updateAlerts(function (datadogStore) {
+        var dataStore = datadogStore.getAll();
+
+        for (monitorID in dataStore) {
+            // accumulate monitor details in outputMessage
+            outputMessage += dataStore[monitorID].name + ' has state ' +
+            dataStore[monitorID].state + ' (ID: ' + monitorID + '). ';
+
+            if (dataStore[monitorID].claimed &&
+                dataStore[monitorID].claimed !== "none") {
+
+                var alias = users.getSingleUserName(dataStore[monitorID].
+                    claimed);
+
+                if (alias) {
+                    outputMessage += 'Claimed by ' +
+                    users.getSingleUserName(dataStore[monitorID].claimed) +
+                    '.\n';
+                }
+
+                else {
+                    outputMessage += 'Claimed by ' +
+                    dataStore[monitorID].claimed + '.\n';
+                }
+            }
+            else {
+                outputMessage += 'Unclaimed.\n';
+            }
+
+            outputMessage += dataStore[monitorID].url + '\n';
+        }
+
+        callback({
+            "id": 6,
+            "type": "message",
+            "channel": channel,
+            "text": outputMessage
+        });
+
+    });
+}
+
 function executePlugin (channel, callback, text, user) {
     // handle "get datadog" command
     var isGet = text.split("datadog")[0].trim();
@@ -22,39 +110,7 @@ function executePlugin (channel, callback, text, user) {
 
     // if text is "get datadog", get all monitor details using API
     if (isGet === "get") {
-
-        updateAlerts(function (datadogStore) {
-            var dataStore = datadogStore.getAll();
-
-            for (monitorID in dataStore) {
-                // accumulate monitor details in outputMessage
-                outputMessage += dataStore[monitorID]["name"] + ' has state ' +
-                dataStore[monitorID]["state"] + ' (ID: ' + monitorID + '). ';
-
-                if (dataStore[monitorID]["claimed"] && dataStore[monitorID]["claimed"] !== "none") {
-
-                    var alias = users.getSingleUserName(dataStore[monitorID]["claimed"])
-                    if (alias) {
-                        outputMessage += 'Claimed by ' + users.getSingleUserName(dataStore[monitorID]["claimed"]) + '.\n';
-                    }
-                    else {
-                        outputMessage += 'Claimed by ' + dataStore[monitorID]["claimed"] + '.\n';
-                    }
-                }
-                else {
-                    outputMessage += 'Unclaimed.\n'
-                }
-
-                outputMessage += dataStore[monitorID]["url"] + '\n';
-            };
-
-            callback({
-                "id": 6,
-                "type": "message",
-                "channel": channel,
-                "text": outputMessage
-            });
-        });
+        getDatadog(outputMessage, callback, channel);
     }
 
     // check for, handle "unclaim" command
@@ -86,7 +142,7 @@ function executePlugin (channel, callback, text, user) {
 
                 if (linkWithID) {
                     // parse link to get id
-                    var monitorExp = new RegExp ('\/monitors#(\d+)');
+                    var monitorExp = new RegExp('\/monitors#(\d+)');
 
                     var parsedID = monitorExp.exec(linkWithID);
 
@@ -96,20 +152,25 @@ function executePlugin (channel, callback, text, user) {
                         // try to get monitor details by ID
                         var monitorOptions = {
                             'url': 'app.datadoghq.com/api/v1/monitor/' +
-                            parsedID + '?api_key=' + process.env.DATADOG_API_KEY
-                            + '&application_key=' + process.env.DATADOG_APP_KEY
-                        }
+                            parsedID + '?api_key=' +
+                            process.env.DATADOG_API_KEY +
+                            '&application_key=' + process.env.DATADOG_APP_KEY
+                        };
 
-                        core.makeRequest(monitorOptions, function (monitorData) {
-                            if (monitorData.overall_state && monitorData.overall_state !== 'OK') {
+                        core.makeRequest(monitorOptions,
+                            function (monitorData) {
+                            if (monitorData.overall_state &&
+                                monitorData.overall_state !== 'OK') {
                                 // add entry to datastore
                                 ds.store(parsedID, user);
 
                                 // mute monitor
                                 var muteOptions = {
                                     'url': 'app.datadoghq.com/api/v1/monitor/' +
-                                    parsedID + '/mute?api_key=' + process.env.DATADOG_API_KEY
-                                    + '&application_key=' + process.env.DATADOG_APP_KEY
+                                    parsedID + '/mute?api_key=' +
+                                    process.env.DATADOG_API_KEY +
+                                    '&application_key=' +
+                                    process.env.DATADOG_APP_KEY
                                 };
 
                                 core.makeRequest(muteOptions, function () {});
@@ -130,12 +191,22 @@ function executePlugin (channel, callback, text, user) {
 
                     // if failed to parse monitor ID, send error message.
                     else {
-                        // error message
+                        callback({
+                            "id": 6,
+                            "type": "message",
+                            "channel": channel,
+                            "text": 'Could not claim monitor in last message.'
+                        });
                     }
                 }
 
                 else {
-                    console.log('GETTING LINKWITHID FAILED');
+                    callback({
+                        "id": 6,
+                        "type": "message",
+                        "channel": channel,
+                        "text": 'Could not claim monitor in last message.'
+                    });
                 }
             });
         }
@@ -147,49 +218,6 @@ function executePlugin (channel, callback, text, user) {
             }
         }
     }
-}
-
-function updateAlerts (optionalCB) {
-    var options = {
-        'url': 'app.datadoghq.com/api/v1/monitor?api_key=' +
-        process.env.DATADOG_API_KEY + '&application_key=' +
-        process.env.DATADOG_APP_KEY
-    };
-
-    core.makeRequest (options, function (data, code) {
-
-        data.forEach(function(monitor) {
-
-            if (monitor.overall_state && monitor.overall_state !== 'OK') {
-
-                datadogStore.store([monitor.id, 'state', monitor.overall_state.toString()]);
-                datadogStore.store([monitor.id, 'name', monitor.name.toString()]);
-                datadogStore.store([monitor.id, 'url', 'https://app.datadoghq.com/monitors#' + monitor.id]);
-
-                if (!datadogStore.get([monitor.id])) {
-                    datadogStore.store([monitor.id, 'claimed', 'none']);
-                }
-
-            }
-        });
-
-        var store = datadogStore.getAll();
-        for (monitorID in store) {
-            if (store[monitorID]["state"] === 'OK') {
-                datadogStore.remove([monitorID]);
-            }
-        }
-
-        if (optionalCB) {
-            optionalCB(datadogStore);
-        }
-    });
-}
-
-function helpDescription () {
-    return '_DATADOG_\nSend *get datadog* to see Datadog alerts, warnings, and claimed status.\n' +
-    'Send *datadog claim [ID]* to claim a monitor or datadog unclaim [ID] to ' +
-    'unclaim a monitor. Use *get datadog* to see monitor IDs.';
 }
 
 module.exports = {
