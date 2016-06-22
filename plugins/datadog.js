@@ -10,6 +10,10 @@ var datadogStore = new ds.DataStore();
 
 setInterval(updateAlerts, 600000);
 
+var datadogStore = new ds.DataStore();
+
+setInterval(updateAlerts, 600000);
+
 function isCallable (text) {
     return text.includes('datadog');
 }
@@ -39,7 +43,6 @@ function executePlugin (channel, callback, text, user) {
                     else {
                         outputMessage += 'Claimed by ' + dataStore[monitorID]["claimed"] + '.\n';
                     }
-
                 }
                 else {
                     outputMessage += 'Unclaimed.\n'

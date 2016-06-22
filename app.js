@@ -4,6 +4,7 @@ const _ = require('lodash');
 
 const core = require('./core.js');
 const mb = require('./messagebroker.js');
+const ds = require('./datastore.js');
 
 const plugins = require('./plugins/index.js');
 
@@ -20,6 +21,8 @@ function onOpen (soc, channelIDs) {
     msgBroker = new mb.MessageBroker(soc);
 
     msgBroker.init();
+
+    dataStore = new ds.DataStore();
 
     channelIDs.forEach(function(id) {
         if (_.includes(whitelistChannels, id)) {

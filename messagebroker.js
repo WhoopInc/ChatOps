@@ -27,5 +27,3 @@ MessageBroker.prototype.init = function () {
 module.exports = {
     MessageBroker: MessageBroker
 };
-
-
