@@ -4,7 +4,6 @@ const http = require('http');
 const u = require('url');
 const buffer = require('buffer');
 const xml = require('node-xml');
-const FormData = require('form-data');
 
 var core = require('../core.js');
 var ds = require('../datastore.js');
@@ -26,8 +25,6 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         port: 8080
     };
 
-    //var postData;
-    //var form;
 
     // prepare postData, if parameters passed in
     if (!_.isEmpty(parameters)) {
@@ -41,9 +38,7 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
 
         jobOptions.url += 'WithParameters?';
 
-        //form = new FormData();
         for (key in parameters) {
-            //form.append(key, parameters[key].toString());
             jobOptions.url += encodeURIComponent(key) + '=' + encodeURIComponent(parameters[key]) + '&';
         };
 
