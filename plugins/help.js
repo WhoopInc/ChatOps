@@ -27,7 +27,7 @@ function executePlugin (channel, callback, text, user) {
         var outputMessage = '';
         var outputChannel;
 
-        // get channel for DM to user
+        // get or open channel to DM user
         var options = {
             url: 'slack.com/api/im.open?token=' + process.env.SLACK_API_TOKEN +
             '&user=' + user
@@ -57,9 +57,6 @@ function executePlugin (channel, callback, text, user) {
                         }
                     }
                 }
-
-                console.log('FINAL OUTPUTMESSAGE: ', outputMessage);
-                console.log('OUTPUT CHANNEL: ', outputChannel);
 
                 if (outputMessage !== '' && outputChannel) {
                     callback({

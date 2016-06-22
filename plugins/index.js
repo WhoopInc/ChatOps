@@ -14,28 +14,19 @@ pluginsFound.forEach(function (plugin) {
     }
 });
 
+// channels bot should listen on, not including DM channels
 var whitelistChannels = ['C1DNMQSCD', // #botdev
                          'C1BBWJ7PF' // #bottest
 ];
 
-// add im channels
-var options = {
-    url: 'slack.com/api/im.list?token=' + process.env.SLACK_API_TOKEN
-};
-
-core.makeRequest(options, function(data) {
-    var imChannels = data.ims;
-    imChannels.forEach(function(channel) {
-        if (channel.user !== 'USLACKBOT') {
-            whitelistChannels.push(channel.id);
-        }
-    });
-});
 
 function handlePlugins (channel, callback, text, user) {
 
-    // for each whitelisted plugin, check if applicable. if true, execute
-    if (_.includes(whitelistChannels, channel)) {
+    var dmRegExp = new RegExp('^D');
+
+    // for each plugin, check if applicable. if true, execute
+    if (_.includes(whitelistChannels, channel) ||
+        dmRegExp.test(channel.toString())) {
         for (key in plugins) {
             if (plugins[key].isCallable(text)) {
                 plugins[key].executePlugin(channel, callback, text, user);
