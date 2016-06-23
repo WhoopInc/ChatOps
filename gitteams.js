@@ -27,16 +27,12 @@ function fetchGithub () {
             var users = [];
 
             core.paginate(teamUserOptions, function (userArray) {
-                var counter = 0;
 
                 userArray.forEach(function(user) {
                     users.push(user.login);
-                    counter++;
                 });
 
-                if (counter === userArray.length) {
-                    githubStore.store([team.id, 'members', users]);
-                }
+                githubStore.store([team.id, 'members', users]);
             });
 
             // for each team, get repos and add them to store
@@ -47,20 +43,16 @@ function fetchGithub () {
             var repos = [];
 
             core.paginate(teamRepoOptions, function (repoArray) {
-                var counter = 0;
 
                 repoArray.forEach(function(repo) {
                     repos.push({
                         "name": repo.name,
                         "html_url": repo.html_url
                     });
-
-                    counter++;
                 });
 
-                if (counter === repoArray.length) {
-                    githubStore.store([team.id, 'repos', repos]);
-                }
+                githubStore.store([team.id, 'repos', repos]);
+
             });
 
         });
