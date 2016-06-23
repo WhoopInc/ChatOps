@@ -1,7 +1,6 @@
 const https = require('https');
 const http = require('http');
 const u = require('url');
-const FormData = require('form-data');
 const mb = require('./messagebroker.js');
 
 function getAuthByHost (hostname) {

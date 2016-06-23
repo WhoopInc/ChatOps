@@ -28,7 +28,7 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         //var parameterParam = encodeURIComponent(jsonParametersString);
         //parameters.json = parameterParam;
 
-        postData = parameters.toString();
+        postData = JSON.stringify(parameters);
         console.log('POST DATA: ', postData);
 
         jobOptions.headers = {
