@@ -9,9 +9,10 @@ function isCallable (text) {
 
 
 function helpDescription () {
-    return '_GITHUB_\nSend *get github* to retrieve a list of all open pull ' +
-    'requests, or *get github [your_github_username]* to retrieve a list of ' +
-    'open pull requests for your teams.';
+    return '_GITHUB_\nSend *get github [your_github_username]* to ' +
+    'see open pull requests for your teams ' +
+    'or *get github [your_github_username]* to see all open ' +
+    'pull requests for Whoop.';
 }
 
 
