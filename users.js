@@ -19,10 +19,6 @@ function getUsers () {
             userStore.store([member.id, 'name', member.profile.real_name]);
         });
     });
-
-    var openDMOptions = {
-        url: 'slack.com/api/users.list?token=' + process.env.SLACK_API_TOKEN
-    };
 }
 
 function getContents () {
