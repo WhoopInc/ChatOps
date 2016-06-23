@@ -9,11 +9,6 @@ const ds = require('./datastore.js');
 
 const plugins = require('./plugins/index.js');
 
-const gitTeams = require('./gitteams.js');
-const users = require('./users.js');
-const channels = require('./channels.js');
-
-
 var whitelistChannels = ['C1DNMQSCD', // #botdev
                          'C1BBWJ7PF' // #bottest
 ];
@@ -26,7 +21,7 @@ function onOpen (soc, channelIDs) {
     var stores = fs.readdirSync('./datastores');
 
     stores.forEach(function(store) {
-        console.log('store');
+        console.log(store);
         var alias = stores[store.split('.js')[0]]
         alias = require('./datastores/' + store.toString());
         alias.fetch();

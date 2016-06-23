@@ -1,7 +1,7 @@
 const _ = require('lodash');
 
 const core = require('../core.js');
-const gitTeams = require('../gitteams.js');
+const gitTeams = require('../datastores/gitteams.js');
 
 function isCallable (text) {
     return /get github/i.test(text);
