@@ -1,5 +1,6 @@
 require('dotenv').config({silent: true});
 const WebSocket = require('ws');
+const fs = require('fs');
 const _ = require('lodash');
 
 const core = require('./core.js');
@@ -22,9 +23,14 @@ function onOpen (soc, channelIDs) {
 
     mb.initialize(soc);
 
-    gitTeams.fetchGithub();
-    users.fetchUsers();
-    channels.fetchChannels();
+    var stores = fs.readdirSync('./datastores');
+
+    stores.forEach(function(store) {
+        console.log('store');
+        var alias = stores[store.split('.js')[0]]
+        alias = require('./datastores/' + store.toString());
+        alias.fetch();
+    });
 
     channelIDs.forEach(function(id) {
         if (_.includes(whitelistChannels, id)) {
