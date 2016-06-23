@@ -33,15 +33,7 @@ function getSingleUserName (id) {
 }
 
 module.exports = {
-<<<<<<< 9005349a9dd5acbd2a065ee39ad15bc698dadb32:datastores/users.js
     fetch: fetch,
-=======
-<<<<<<< ed38c8a01d20e048a56c8d3837c75f39d65ac196:users.js
-    fetchUsers: fetchUsers,
-=======
-    fetch: fetch,
->>>>>>> Reorganized datastores:datastores/users.js
->>>>>>> Reorganized datastores:datastores/users.js
     getContents: getContents,
     getSingleUserName: getSingleUserName
 };
