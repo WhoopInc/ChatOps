@@ -12,6 +12,7 @@
     "chai": "*",
     "dotenv": "^1.2.0",
     "express": "^4.x.x",
+    "form-data": "1.0.0",
     "lodash": "^4.13.1",
     "mocha": "*",
     "mongoose": "~3.8.20",
