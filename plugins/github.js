@@ -1,13 +1,17 @@
-var core = require('../core.js');
+const _ = require('lodash');
 
+const core = require('../core.js');
+const gitTeams = require('../gitteams.js');
 
 function isCallable (text) {
-    return text.trim() === 'get github';
+    return /get github/i.test(text);
 }
 
 
 function helpDescription () {
-    return '_GITHUB_\nSend *get github* to retrieve a list of all open pull requests.';
+    return '_GITHUB_\nSend *get github* to retrieve a list of all open pull ' +
+    'requests, or *get github [your_github_username]* to retrieve a list of ' +
+    'open pull requests for your teams.';
 }
 
 
@@ -25,52 +29,73 @@ function countOpenPR (prArray) {
     return prCounter;
 }
 
+function getPRfromRepos (repoArray, channel, callback) {
 
-// get repositories, output string of repo data
-function executePlugin (channel, callback) {
+    var outputMessage = '';
+    var repoCounter = 0;
 
-    var options = {
-        url: 'api.github.com/orgs/WhoopInc/repos'
-    };
+    // traverse array of repos
+    repoArray.forEach(function (repo) {
 
-    core.paginate(options, function (repoArray) {
+        var urlOption = {url: 'api.github.com/repos/WhoopInc/' +
+        repo.name + '/pulls'};
 
-        var outputMessage = '';
-        var repoCounter = 0;
+        // get the pull requests for the repository
+        core.makeRequest(urlOption, function (prArray) {
 
-        // traverse array of repos
-        repoArray.forEach(function (repo) {
+            // retrieve number of open pull requests
+            var prs = countOpenPR(prArray);
 
-            var urlOption = {url: 'api.github.com/repos/WhoopInc/' +
-            repo.name + '/pulls'};
+            // only prepare message if PRs exist
+            if (prs > 0) {
+                outputMessage += prs.toString() +
+                " open pull request(s) in " + repo.html_url.toString() +
+                "\n";
+            }
 
-            // get the pull requests for the repository
-            core.makeRequest(urlOption, function (prArray) {
+            repoCounter++;
 
-                // retrieve number of open pull requests
-                var prs = countOpenPR(prArray);
-
-                // only prepare message if PRs exist
-                if (prs > 0) {
-                    outputMessage += prs.toString() +
-                    " open pull request(s) in " + repo.html_url.toString() +
-                    "\n";
-                }
-
-                repoCounter++;
-
-                // when entire repoArray traversed, call callback
-                if (repoCounter === repoArray.length) {
-                    callback({
-                        "id": 3,
-                        "type": "message",
-                        "channel": channel,
-                        "text": outputMessage
-                    });
-                }
-            });
+            // when entire repoArray traversed, call callback
+            if (repoCounter === repoArray.length) {
+                callback({
+                    "id": 3,
+                    "type": "message",
+                    "channel": channel,
+                    "text": outputMessage
+                });
+            }
         });
     });
+}
+
+
+function executePlugin (channel, callback, text, user) {
+
+    var reqType = /^get github(.*)/i.exec(text);
+
+    // no username given, make request to get all repos
+    if (reqType[1].trim() === '') {
+        core.paginate({url: 'api.github.com/orgs/WhoopInc/repos'},
+            function(repoArray) {
+                getPRfromRepos(repoArray, channel);
+            });
+    }
+
+    // username given, get repos from dataStore
+    else {
+        var username = reqType[1].trim();
+
+        var teams = gitTeams.getTeamsForUser(username);
+
+        var repoAcc = [];
+
+        teams.forEach(function (team) {
+            repoAcc.push(gitTeams.getTeamRepos(team));
+        });
+
+        getPRfromRepos(_.flatten(repoAcc), channel, callback);
+
+    }
 }
 
 

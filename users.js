@@ -4,10 +4,10 @@ const ds = require('./datastore.js');
 const core = require('./core.js');
 
 var userStore = new ds.DataStore();
-setInterval(getUsers, 10000);
+setInterval(fetchUsers, 24 * 60 * 60 * 1000);
 //setInterval(getUsers, 86400000);
 
-function getUsers () {
+function fetchUsers () {
     var options = {
         url: 'slack.com/api/users.list?token=' + process.env.SLACK_API_TOKEN
     };
@@ -30,12 +30,11 @@ function getContents () {
 }
 
 function getSingleUserName (id) {
-    console.log('RES: ', userStore.get([id, 'name']));
     return userStore.get([id, 'name']);
 }
 
 module.exports = {
-    getUsers: getUsers,
+    fetchUsers: fetchUsers,
     getContents: getContents,
     getSingleUserName: getSingleUserName
 };

@@ -1,6 +1,7 @@
 const https = require('https');
 const http = require('http');
 const u = require('url');
+const mb = require('./messagebroker.js');
 
 function getAuthByHost (hostname) {
     if (hostname === 'jenkins.whoop.com' || hostname === 'api.github.com') {

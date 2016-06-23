@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const xml = require('node-xml');
+const querystring = require('querystring');
 
 const core = require('../core.js');
 const ds = require('../datastore.js');
@@ -19,23 +20,28 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         method: 'POST'
     };
 
+    var postData;
 
     // prepare postData, if parameters passed in
-    if (!_.isEmpty(parameters)) {
-        // var jsonParametersString = JSON.stringify({"parameter": parameters});
-        // var parameterParam = encodeURIComponent(jsonParametersString);
-        // parameters.json = parameterParam;
+    if (parameters.length > 0) {
+        //var jsonParametersString = JSON.stringify({"parameter": [parameters]});
+        //var parameterParam = encodeURIComponent(jsonParametersString);
+        //parameters.json = parameterParam;
 
-        // jobOptions.headers = {
-        //     'Content-Type': 'application/x-www-form-urlencoded'
-        // };
+        postData = JSON.stringify(parameters);
+        console.log('POST DATA: ', postData);
 
-        jobOptions.url += 'WithParameters?';
+        jobOptions.headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': postData.length
+        };
 
-        for (key in parameters) {
-            jobOptions.url += encodeURIComponent(key) + '=' +
-            encodeURIComponent(parameters[key]) + '&';
-        }
+        jobOptions.url += 'WithParameters';
+
+        // for (key in parameters) {
+        //     jobOptions.url += encodeURIComponent(key) + '=' +
+        //     encodeURIComponent(parameters[key]) + '&';
+        // }
 
         //postData = querystring.stringify(parameters);
     }
@@ -84,7 +90,7 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         };
 
         checkJobStatus(statusOptions, callback, channel);
-    });
+    }, postData);
 }
 
 function leftJobInfo (callback, channel, checkUrl) {
@@ -344,12 +350,15 @@ function handleListKeyword (listQuery, jobArray, outputMessage, callback,
 }
 
 
-function handleParameters (parametersObj, keyEqualsVal) {
+function handleParameters (parametersArr, keyEqualsVal) {
     var keyVal = keyEqualsVal.split("=");
     var key = keyVal[0].trim();
-    parametersObj[key] = keyVal[1].trim();
+    var paramObj = {};
+    paramObj[key] = keyVal[1].trim();
+    parametersArr.push(keyEqualsVal);
+   // parametersArr.push(keyVal[1].trim());
 
-    return parametersObj;
+    return parametersArr;
 }
 
 function isCallable (text) {
@@ -400,7 +409,7 @@ function executePlugin (channel, callback, text) {
             var command = splitText[0].trim();
 
             var flagExpression = new RegExp('^([A-Za-z]) *(.*)$');
-            var parameters = {};
+            var parameters = [];
 
             // traverse non-command terms of array
             for (var i = 1; i < splitText.length; i++) {
@@ -428,6 +437,7 @@ function executePlugin (channel, callback, text) {
             });
 
             if (exactMatch) {
+                console.log('PARAMETERS: ', parameters);
                 buildJenkinsJob(exactMatch, channel, callback, parameters);
             }
 

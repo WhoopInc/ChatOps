@@ -8,6 +8,10 @@ const ds = require('./datastore.js');
 
 const plugins = require('./plugins/index.js');
 
+const gitTeams = require('./gitteams.js');
+const users = require('./users.js');
+const channels = require('./channels.js');
+
 
 var whitelistChannels = ['C1DNMQSCD', // #botdev
                          'C1BBWJ7PF' // #bottest
@@ -17,6 +21,10 @@ var whitelistChannels = ['C1DNMQSCD', // #botdev
 function onOpen (soc, channelIDs) {
 
     mb.initialize(soc);
+
+    gitTeams.fetchGithub();
+    users.fetchUsers();
+    channels.fetchChannels();
 
     channelIDs.forEach(function(id) {
         if (_.includes(whitelistChannels, id)) {
