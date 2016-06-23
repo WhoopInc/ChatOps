@@ -1,12 +1,8 @@
 const _ = require('lodash');
-var querystring = require('querystring');
-const http = require('http');
-const u = require('url');
-const buffer = require('buffer');
 const xml = require('node-xml');
 
-var core = require('../core.js');
-var ds = require('../datastore.js');
+const core = require('../core.js');
+const ds = require('../datastore.js');
 
 var jenkinsStore = new ds.DataStore();
 
@@ -16,13 +12,11 @@ var jenkinsStore = new ds.DataStore();
    */
 function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
 
-    var urlExp = new RegExp ('^https://jenkins.whoop.com/(.*)/$');
+    var urlExp = new RegExp('^https://(jenkins.whoop.com/.*)/$');
 
     var jobOptions = {
-
-        url: requestedJobObject.url.replace(urlExp, '10.25.2.22/$1/build'),
-        method: 'POST',
-        port: 8080
+        url: requestedJobObject.url.replace(urlExp, '$1/build'),
+        method: 'POST'
     };
 
 
@@ -39,13 +33,14 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         jobOptions.url += 'WithParameters?';
 
         for (key in parameters) {
-            jobOptions.url += encodeURIComponent(key) + '=' + encodeURIComponent(parameters[key]) + '&';
-        };
+            jobOptions.url += encodeURIComponent(key) + '=' +
+            encodeURIComponent(parameters[key]) + '&';
+        }
 
         //postData = querystring.stringify(parameters);
     }
 
-    makeRequest(jobOptions, function (data, statusCode) {
+    core.makeRequest(jobOptions, function (data, statusCode) {
 
         if (statusCode === 201) {
             callback({
@@ -67,9 +62,9 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
                     "channel": channel,
                     "text": requestedJobObject.name +
                     ' takes parameter(s). Specify parameters with ' +
-                    '"-p key=value". Build failed with status code '+
+                    '"-p key=value". Build failed with status code ' +
                     statusCode + '.'
-                })
+                });
             }
         }
 
@@ -84,12 +79,11 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
             });
         }
     }, function (res) {
-       var statusOptions = {
-            url: res.headers.location.split('//').pop() + 'api/xml',
-            port: 8080
+        var statusOptions = {
+            url: res.headers.location.split('//').pop() + 'api/xml'
         };
 
-       checkJobStatus (statusOptions, callback, channel);
+        checkJobStatus(statusOptions, callback, channel);
     });
 }
 
@@ -102,19 +96,17 @@ function leftJobInfo (callback, channel, checkUrl) {
     var outputInfo = {};
 
     var newOptions = {
-        url: checkUrl + 'api/xml',
-        port: 8080
+        url: checkUrl + 'api/xml'
     };
 
-    makeRequest(newOptions, function (data) {
-        console.log('LEFT DATA: ', data);
+    core.makeRequest(newOptions, function (data) {
 
         // catch wanted XML information from data
         var parser = new xml.SaxParser(function(cb) {
             cb.onStartElementNS(function(elem) {
                 if (elem === 'result') {
                     cb.onCharacters(function(chars) {
-                        result = chars
+                        result = chars;
                     });
                 }
 
@@ -162,11 +154,13 @@ function leftJobInfo (callback, channel, checkUrl) {
         if (outputInfo.fullDisplayName &&
             outputInfo.duration) {
 
-            jenkinsStore.store([outputInfo.fullDisplayName, 'duration', outputInfo.duration]);
+            jenkinsStore.store([outputInfo.fullDisplayName, 'duration',
+                outputInfo.duration]);
             jenkinsStore.store([outputInfo.fullDisplayName, 'url', checkUrl]);
 
             if (outputInfo.result) {
-                jenkinsStore.store([outputInfo.fullDisplayName, 'result', outputInfo.result.toString()]);
+                jenkinsStore.store([outputInfo.fullDisplayName, 'result',
+                    outputInfo.result.toString()]);
 
                 if (outputInfo.shortDescription) {
                     callback({
@@ -174,13 +168,15 @@ function leftJobInfo (callback, channel, checkUrl) {
                         "type": "message",
                         "channel": channel,
                         "text": outputInfo.fullDisplayName + ' (' +
-                        outputInfo.shortDescription + ') finished with result ' +
-                        outputInfo.result + ' after ' + outputInfo.duration
+                        outputInfo.shortDescription + ') finished with ' +
+                        'result ' + outputInfo.result + ' after ' +
+                        outputInfo.duration
                     });
                 }
             }
             else {
-                jenkinsStore.store([outputInfo.fullDisplayName, 'result', 'null']);
+                jenkinsStore.store([outputInfo.fullDisplayName, 'result',
+                    'null']);
             }
         }
     }, function (res) {});
@@ -195,66 +191,63 @@ function checkJobStatus (options, callback, channel, checkUrl) {
         var name;
         var shortDescription;
 
-        makeRequest(options, function (data) {
-            console.log('DATA: ', data);
+        core.makeRequest(options, function (data) {
 
             var parser = new xml.SaxParser(function(cb) {
-                    cb.onStartElementNS(function(elem) {
-                        if (elem === 'name') {
-                            cb.onCharacters(function(chars) {
-                                name = chars;
-                            })
-                        }
+                cb.onStartElementNS(function(elem) {
+                    if (elem === 'name') {
+                        cb.onCharacters(function(chars) {
+                            name = chars;
+                        });
+                    }
 
-                        if (elem === 'shortDescription') {
-                            cb.onCharacters(function(chars) {
-                                shortDescription = chars;
-                            })
-                        }
+                    if (elem === 'shortDescription') {
+                        cb.onCharacters(function(chars) {
+                            shortDescription = chars;
+                        });
+                    }
 
-                        if (elem === 'executable') {
-                            cb.onStartElementNS(function(elem) {
-                                if (elem === 'url') {
-                                    cb.onCharacters(function(chars) {
-                                        var urlExp = new RegExp ('^https://jenkins.whoop.com/(.*)$');
+                    if (elem === 'executable') {
+                        cb.onStartElementNS(function(eleme) {
+                            if (eleme === 'url') {
+                                cb.onCharacters(function(chars) {
+                                    var urlExp = new RegExp
+                                    ('^https://(jenkins.whoop.com/.*)$');
 
-                                        checkUrl = chars.replace(urlExp, '10.25.2.22/$1');
+                                    checkUrl = chars.replace(urlExp, '$1');
 
-                                        outputInfo.checkUrl = checkUrl;
-
-                                        console.log('FOUND URL: ', checkUrl);
-                                    });
-                                }
-                            });
-                        }
-                    });
-
-                    cb.onEndElementNS(function (elem) {
-                        if (elem === 'name') {
-                            outputInfo.name = name;
-                        }
-
-                        if (elem === 'shortDescription') {
-                            outputInfo.shortDescription = shortDescription;
-                        }
-                    });
+                                    outputInfo.checkUrl = checkUrl;
+                                });
+                            }
+                        });
+                    }
                 });
 
-                parser.parseString(data);
+                cb.onEndElementNS(function (elem) {
+                    if (elem === 'name') {
+                        outputInfo.name = name;
+                    }
 
-                if (outputInfo.name && outputInfo.shortDescription &&
-                    outputInfo.checkUrl) {
-                    callback({
-                        "id": 4,
-                        "type": "message",
-                        "channel": channel,
-                        "text": outputInfo.name + ' (' +
-                        outputInfo.shortDescription
-                        + ') left the queue.'
-                    });
+                    if (elem === 'shortDescription') {
+                        outputInfo.shortDescription = shortDescription;
+                    }
+                });
+            });
 
-                    checkJobStatus(options, callback, channel, outputInfo.checkUrl);
-                }
+            parser.parseString(data);
+
+            if (outputInfo.name && outputInfo.shortDescription &&
+                outputInfo.checkUrl) {
+                callback({
+                    "id": 4,
+                    "type": "message",
+                    "channel": channel,
+                    "text": outputInfo.name + ' (' +
+                    outputInfo.shortDescription + ') left the queue.'
+                });
+
+                checkJobStatus(options, callback, channel, outputInfo.checkUrl);
+            }
 
             if (!checkUrl) {
                 checkJobStatus(options, callback, channel);
@@ -265,7 +258,7 @@ function checkJobStatus (options, callback, channel, checkUrl) {
 
     // called once after item leaves queue
     else {
-        leftJobInfo(callback, channel, checkUrl)
+        leftJobInfo(callback, channel, checkUrl);
     }
 }
 
@@ -281,7 +274,7 @@ function getFullJobList (callback) {
 
     core.makeRequest(options, function (dataObject) {
         callback(dataObject.jobs);
-    })
+    });
 }
 
 
@@ -308,7 +301,7 @@ function findMatches (keyword, collection, additionalFun) {
     });
 
     if (counter === collection.length) {
-        return foundMatches
+        return foundMatches;
     }
 }
 
@@ -323,7 +316,6 @@ function handleListKeyword (listQuery, jobArray, outputMessage, callback,
             // if no listQuery, accumulate all entries.
             if (listQuery === '') {
                 outputMessage += item.name + '\n';
-                console.log('OUTPUT MESSAGE: ', outputMessage);
             }
         });
 
@@ -356,7 +348,7 @@ function handleParameters (parametersObj, keyEqualsVal) {
     var keyVal = keyEqualsVal.split("=");
     var key = keyVal[0].trim();
     parametersObj[key] = keyVal[1].trim();
-    console.log('PARAMETERS in handleParameters: ', parametersObj);
+
     return parametersObj;
 }
 
@@ -369,8 +361,9 @@ function helpDescription () {
     return '_JENKINS_\nSend *jenkins [keyword] list* to list jenkins' +
     ' jobs with specified keyword in name.\n' +
     'Send *jenkins [job name]* to build a jenkins job. If the job name is ' +
-    'not exactly correct, bot will attempt to fuzzy match it to the correct '
-    + 'job.\n Send *jenkins [job name] -p KEY=value* to build a job with parameters';
+    'not exactly correct, bot will attempt to fuzzy match it to the ' +
+    'correct job.\n Send *jenkins [job name] -p KEY=value* to build a job ' +
+    'with parameters';
 }
 
 
@@ -395,8 +388,9 @@ function executePlugin (channel, callback, text) {
         // LIST KEYWORD: bot should list all jobs [containing keyword]
         if (list) {
             // get prefix of list
-            listQuery = list[1].trim();
-            handleListKeyword(listQuery, jobArray, outputMessage, callback, channel);
+            var listQuery = list[1].trim();
+            handleListKeyword(listQuery, jobArray, outputMessage, callback,
+                channel);
         }
 
         // NO LIST KEYWORD: look for flags, then attempt to execute a job.
@@ -449,7 +443,8 @@ function executePlugin (channel, callback, text) {
 
                 // if only one match found at end, execute the job
                 if (finalMatches.length === 1) {
-                    buildJenkinsJob(finalMatches[0], channel, callback, parameters);
+                    buildJenkinsJob(finalMatches[0], channel, callback,
+                        parameters);
                 }
                 // if more than one final match, ask user if they
                 // meant one of the matches
@@ -486,113 +481,19 @@ function updateNulls (msgCB) {
     // retrieve builds with null results from jenkinsStore
     _.forEach(this.dataStore, function (value, key) {
         if (value[result] !== 'SUCCESS' && value[result] !== 'FAILURE') {
-            nullResults.push({ "name": key, "url": value[url] });
+            nullResults.push({
+                "name": key,
+                "url": value[url]});
         }
     });
 
     if (nullResults.length > 0) {
         nullResults.forEach(function(build) {
-            makeRequest( { url: build.url + 'api/xml' }, function (data) {
+            core.makeRequest({url: build.url + 'api/xml'},
+                function (data) {
 
-            });
+                });
         });
-    }
-}
-
-function makeRequest (object, callback, responseCB, form) {
-    var accumulator = '';
-
-    var parsedUrl = u.parse('//' + object.url, true, true);
-
-    var options = {
-        hostname: parsedUrl.hostname,
-        port: object.port || 8080,
-        path: parsedUrl.path,
-        method: object.method || 'GET',
-        auth: getAuthByHost(parsedUrl.hostname)
-    };
-
-    if (object.headers) {
-        options.headers = object.headers;
-    }
-
-    if (options.hostname === 'api.github.com') {
-
-        if (!object.headers) {
-            options.headers = {'User-Agent': 'WhoopInc'};
-        }
-        else if (!object.headers['User-Agent']) {
-            options.headers['User-Agent'] = 'WhoopInc';
-        }
-    }
-
-    console.log('OPTIONS: ', options);
-
-    var response = null;
-    var req = http.request(options, function(res) {
-        response = res;
-
-        res.on('data', function (data) {
-            accumulator = accumulator + data.toString();
-            res.resume();
-        });
-
-        res.on('close', function () {
-            // first assume accumulator is JSON object
-            var responseContent;
-            try {
-                responseContent = JSON.parse(accumulator);
-            }
-            // if not object, use accumulator as string
-            catch (err) {
-                responseContent = accumulator;
-            }
-
-            callback(responseContent, response.statusCode);
-
-
-            if (responseCB) {
-                responseCB(res);
-            }
-
-        });
-    });
-
-    req.on('close', function () {
-        console.log('RESPONSE CODE: ', response.statusCode);
-        //console.log('ACCUMULATOR: ', accumulator);
-
-        // first assume accumulator is JSON object
-        var responseContent;
-        try {
-            responseContent = JSON.parse(accumulator);
-        }
-        catch (err) {
-            responseContent = accumulator;
-        }
-
-        callback(responseContent, response.statusCode);
-
-        if (responseCB) {
-            responseCB(response);
-        }
-
-    });
-
-    if (form) {
-        console.log('FORM: ', form);
-        // convert postData from object to string, then write
-        form.pipe(req);
-    }
-
-    req.end();
-}
-
-function getAuthByHost (hostname) {
-    if (hostname === 'jenkins.whoop.com' || hostname === 'api.github.com' ||
-        hostname === '10.25.2.22') {
-        return process.env.GITHUB_USERNAME + ':' +
-        process.env.GITHUB_API_TOKEN;
     }
 }
 

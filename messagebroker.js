@@ -1,6 +1,11 @@
+const _ = require('lodash');
+
 function MessageBroker (soc) {
     this.socket = soc;
     this.queue = [];
+    this.whitelist = ['C1DNMQSCD', // #botdev
+                      'C1BBWJ7PF' // #bottest
+                     ];
 }
 
 MessageBroker.prototype.sendMessage = function () {
@@ -8,8 +13,10 @@ MessageBroker.prototype.sendMessage = function () {
 
         var val = this.queue.pop();
 
-        //console.log('TRYING TO SEND MESSAGE: ', val);
-        this.socket.send(JSON.stringify(val));
+        if (_.includes(whitelistChannels, val.channel) ||
+            /^D/.test(val.channel)) {
+            this.socket.send(JSON.stringify(val));
+        }
     }
 };
 
@@ -25,6 +32,11 @@ MessageBroker.prototype.init = function () {
 };
 
 var messageBroker;
+
+// channels bot can talk on
+var whitelistChannels = ['C1DNMQSCD', // #botdev
+                         'C1BBWJ7PF' // #bottest
+                         ];
 
 function initialize(sock) {
     if (!messageBroker) {

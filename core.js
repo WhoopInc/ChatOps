@@ -1,7 +1,6 @@
-var https = require('https');
-var u = require('url');
-var buffer = require('buffer');
-const querystring = require('querystring');
+const https = require('https');
+const http = require('http');
+const u = require('url');
 
 function getAuthByHost (hostname) {
     if (hostname === 'jenkins.whoop.com' || hostname === 'api.github.com') {

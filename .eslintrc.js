@@ -12,7 +12,6 @@ module.exports = {
         "arrow-spacing": "error",
         "block-scoped-var": "error",
         "block-spacing": "error",
-        "brace-style": "error",
         "callback-return": "error",
         "camelcase": "error",
         "comma-spacing": [
@@ -161,10 +160,6 @@ module.exports = {
         "object-shorthand": "off",
         "one-var": "off",
         "one-var-declaration-per-line": "error",
-        "operator-assignment": [
-            "error",
-            "never"
-        ],
         "operator-linebreak": "error",
         "padded-blocks": "off",
         "prefer-arrow-callback": "off",
