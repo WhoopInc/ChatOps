@@ -2,7 +2,7 @@ require('dotenv').config({silent: true});
 
 const core = require('../core.js');
 const ds = require('../datastore.js');
-const users = require('../users.js');
+const users = require('../datastores/users.js');
 
 var datadogStore = new ds.DataStore();
 setInterval(updateAlerts, 600000);

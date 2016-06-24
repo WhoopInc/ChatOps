@@ -1,4 +1,4 @@
-const users = require('../users.js');
+const users = require('../datastores/users.js');
 
 const _ = require('lodash');
 

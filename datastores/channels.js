@@ -1,13 +1,13 @@
 require('dotenv').config({silent: true});
 
-const ds = require('./datastore.js');
-const core = require('./core.js');
+const ds = require('../datastore.js');
+const core = require('../core.js');
 
 var channelStore = new ds.DataStore();
-setInterval(fetchChannels, 24 * 60 * 60 * 1000);
+setInterval(fetch, Number.parseInt(process.env.REFRESH_DATASTORE_INTERVAL_HOURS) * 60 * 60 * 1000);
 
 
-function fetchChannels () {
+function fetch () {
     var options = {
         url: 'slack.com/api/channels.list?token=' + process.env.SLACK_API_TOKEN
     };
@@ -34,7 +34,7 @@ function getAllChannels () {
 }
 
 module.exports = {
-    fetchChannels: fetchChannels,
+    fetch: fetch,
     getSingleChannelName: getSingleChannelName,
     getAllChannels, getAllChannels
 };

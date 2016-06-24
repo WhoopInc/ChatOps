@@ -1,5 +1,6 @@
 require('dotenv').config({silent: true});
 const WebSocket = require('ws');
+const fs = require('fs');
 const _ = require('lodash');
 
 const core = require('./core.js');
@@ -7,11 +8,6 @@ const mb = require('./messagebroker.js');
 const ds = require('./datastore.js');
 
 const plugins = require('./plugins/index.js');
-
-const gitTeams = require('./gitteams.js');
-const users = require('./users.js');
-const channels = require('./channels.js');
-
 
 var whitelistChannels = ['C1DNMQSCD', // #botdev
                          'C1BBWJ7PF' // #bottest
@@ -22,9 +18,14 @@ function onOpen (soc, channelIDs) {
 
     mb.initialize(soc);
 
-    gitTeams.fetchGithub();
-    users.fetchUsers();
-    channels.fetchChannels();
+    var stores = fs.readdirSync('./datastores');
+
+    stores.forEach(function(store) {
+        console.log(store);
+        var alias = stores[store.split('.js')[0]]
+        alias = require('./datastores/' + store.toString());
+        alias.fetch();
+    });
 
     channelIDs.forEach(function(id) {
         if (_.includes(whitelistChannels, id)) {

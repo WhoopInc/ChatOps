@@ -1,13 +1,13 @@
 require('dotenv').config({silent: true});
 
-const ds = require('./datastore.js');
-const core = require('./core.js');
+const ds = require('../datastore.js');
+const core = require('../core.js');
 
 var userStore = new ds.DataStore();
-setInterval(fetchUsers, 24 * 60 * 60 * 1000);
-//setInterval(getUsers, 86400000);
+setInterval(fetch, Number.parseInt(process.env.REFRESH_DATASTORE_INTERVAL_HOURS) * 60 * 60 * 1000);
 
-function fetchUsers () {
+
+function fetch () {
     var options = {
         url: 'slack.com/api/users.list?token=' + process.env.SLACK_API_TOKEN
     };
@@ -34,7 +34,7 @@ function getSingleUserName (id) {
 }
 
 module.exports = {
-    fetchUsers: fetchUsers,
+    fetch: fetch,
     getContents: getContents,
     getSingleUserName: getSingleUserName
 };

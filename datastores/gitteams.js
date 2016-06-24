@@ -1,12 +1,12 @@
 require('dotenv').config({silent: true});
 
-const ds = require('./datastore.js');
-const core = require('./core.js');
+const ds = require('../datastore.js');
+const core = require('../core.js');
 
 var githubStore = new ds.DataStore();
-setInterval(fetchGithub, 24 * 60 * 60 * 1000);
+setInterval(fetch, Number.parseInt(process.env.REFRESH_DATASTORE_INTERVAL_HOURS) * 60 * 60 * 1000);
 
-function fetchGithub () {
+function fetch () {
 
     // get all whoop teams
     var teamOptions = {
@@ -87,7 +87,7 @@ function getTeamsForUser (username) {
 }
 
 module.exports = {
-    fetchGithub: fetchGithub,
+    fetch: fetch,
     getTeamsForUser: getTeamsForUser,
     getTeamRepos: getTeamRepos,
     getTeamMembers: getTeamMembers
