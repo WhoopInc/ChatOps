@@ -1,14 +1,13 @@
-require('dotenv').config({silent: true});
-
 const ds = require('../datastore.js');
 const core = require('../core.js');
+const config = require('../configenv.js');
 
 var userStore = new ds.DataStore();
-setInterval(fetch, Number.parseInt(process.env.REFRESH_DATASTORE_INTERVAL_HOURS) * 60 * 60 * 1000);
+setInterval(fetch, config.env.REFRESH_DATASTORE_INTERVAL_MILLISECONDS);
 
 function fetch () {
     var options = {
-        url: 'slack.com/api/users.list?token=' + process.env.SLACK_API_TOKEN
+        url: 'slack.com/api/users.list?token=' + config.env.SLACK_API_TOKEN
     };
 
     core.makeRequest(options, function(data) {

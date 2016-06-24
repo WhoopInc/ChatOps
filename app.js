@@ -1,4 +1,3 @@
-require('dotenv').config({silent: true});
 const WebSocket = require('ws');
 const fs = require('fs');
 const _ = require('lodash');
@@ -6,6 +5,7 @@ const _ = require('lodash');
 const core = require('./core.js');
 const mb = require('./messagebroker.js');
 const ds = require('./datastore.js');
+const config = require('./configenv.js');
 
 const plugins = require('./plugins/index.js');
 
@@ -33,7 +33,7 @@ function onOpen (soc, channelIDs) {
                 "id": 1,
                 "type": "message",
                 "channel": id,
-                "text": "WhoopBot " + process.env.VERSION +
+                "text": "WhoopBot " + config.env.VERSION +
                     " connected to WebSocket"
             });
         }
@@ -89,7 +89,7 @@ function initializeWebSocket(data) {
                 "id": 1,
                 "type": "message",
                 "channel": channelID,
-                "text": "WhoopBot " + process.env.VERSION +
+                "text": "WhoopBot " + config.env.VERSION +
                     " disconnected from WebSocket."
             });
             mb.destroy();
@@ -102,7 +102,7 @@ function initializeWebSocket(data) {
                 "id": 1,
                 "type": "message",
                 "channel": channelID,
-                "text": "WhoopBot " + process.env.VERSION +
+                "text": "WhoopBot " + config.env.VERSION +
                     " disconnected, received SIGTERM."
             });
             mb.destroy();

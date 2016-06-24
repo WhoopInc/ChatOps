@@ -1,12 +1,14 @@
 const https = require('https');
 const http = require('http');
 const u = require('url');
+
 const mb = require('./messagebroker.js');
+const config = require('./configenv.js');
 
 function getAuthByHost (hostname) {
     if (hostname === 'jenkins.whoop.com' || hostname === 'api.github.com') {
-        return process.env.GITHUB_USERNAME + ':' +
-        process.env.GITHUB_API_TOKEN;
+        return config.env.GITHUB_USERNAME + ':' +
+        config.env.GITHUB_API_TOKEN;
     }
 }
 
