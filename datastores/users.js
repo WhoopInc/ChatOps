@@ -6,7 +6,6 @@ const core = require('../core.js');
 var userStore = new ds.DataStore();
 setInterval(fetch, Number.parseInt(process.env.REFRESH_DATASTORE_INTERVAL_HOURS) * 60 * 60 * 1000);
 
-
 function fetch () {
     var options = {
         url: 'slack.com/api/users.list?token=' + process.env.SLACK_API_TOKEN
