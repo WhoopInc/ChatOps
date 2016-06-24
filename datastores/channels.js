@@ -4,7 +4,7 @@ const ds = require('../datastore.js');
 const core = require('../core.js');
 
 var channelStore = new ds.DataStore();
-setInterval(fetch, 24 * 60 * 60 * 1000);
+setInterval(fetch, Number.parseInt(process.env.REFRESH_DATASTORE_INTERVAL_HOURS) * 60 * 60 * 1000);
 
 
 function fetch () {
