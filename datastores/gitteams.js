@@ -1,10 +1,9 @@
-require('dotenv').config({silent: true});
-
+const config = require('../configenv.js');
 const ds = require('../datastore.js');
 const core = require('../core.js');
 
 var githubStore = new ds.DataStore();
-setInterval(fetch, Number.parseInt(process.env.REFRESH_DATASTORE_INTERVAL_HOURS) * 60 * 60 * 1000);
+setInterval(fetch, config.env.REFRESH_DATASTORE_INTERVAL_MILLISECONDS);
 
 function fetch () {
 
