@@ -6,7 +6,7 @@ const mb = require('./messagebroker.js');
 const config = require('./configenv.js');
 
 function getAuthByHost (hostname) {
-    if (hostname === 'jenkins.whoop.com' || hostname === 'api.github.com') {
+    if (hostname === 'api.github.com' || hostname === 'jenkins.whoop.com') {
         return config.env.GITHUB_USERNAME + ':' +
         config.env.GITHUB_API_TOKEN;
     }
@@ -71,8 +71,13 @@ function makeRequest (object, callback, responseCB, postData) {
         });
     });
 
+    if (postData) {
+        // convert postData from object to string, then write
+        req.write(postData);
+    }
+
     req.on('close', function () {
-        console.log('RESPONSE CODE: ', response.statusCode);
+        console.log('RESPONSE CODE: ' + response.statusCode);
         //console.log('ACCUMULATOR: ', accumulator);
 
         // first assume accumulator is JSON object

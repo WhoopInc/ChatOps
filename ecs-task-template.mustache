@@ -4,7 +4,6 @@
         {
             "name": "ChatOps",
             "image": "whoop/chat-ops:latest",
-            "cpu": 0,
             "memory": 64,
             "portMappings": [],
             "essential": true,
@@ -17,7 +16,15 @@
                 {{/env}}
             ],
             "mountPoints": [],
-            "volumesFrom": []
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "syslog",
+                "options": {
+                    "syslog-address": "{{env.PAPERTRAIL_URL}}",
+                    "tag": "whoop"
+                }
+            }
+
         }
     ],
     "volumes": []

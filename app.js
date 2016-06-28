@@ -27,7 +27,16 @@ function onOpen (soc, channelIDs) {
         alias.fetch();
     });
 
-    dataStore = new ds.DataStore();
+    stores.forEach(function(store) {
+        console.log(store);
+        var alias = stores[store.split('.js')[0]]
+        alias = require('./datastores/' + store.toString());
+
+        if (alias !== 'gitteams') {
+            alias.fetch();
+        }
+
+    });
 
     channelIDs.forEach(function(id) {
         if (_.includes(whitelistChannels, id)) {
@@ -85,7 +94,7 @@ function initializeWebSocket(data) {
     });
 
     socket.on('close', function close() {
-        //console.log('disconnected');
+        console.log('disconnected');
         memberChannels.forEach(function (channelID) {
             mb.send({
                 "id": 1,

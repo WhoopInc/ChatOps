@@ -4,6 +4,7 @@ const querystring = require('querystring');
 
 const core = require('../core.js');
 const ds = require('../datastore.js');
+const config = require('../configenv.js');
 
 var jenkinsStore = new ds.DataStore();
 
@@ -12,6 +13,8 @@ var jenkinsStore = new ds.DataStore();
    * and notifies user.
    */
 function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
+
+    console.log('PARAMETERS: ', parameters);
 
     var urlExp = new RegExp('^https://(jenkins.whoop.com/.*)/$');
 
@@ -24,21 +27,27 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
 
     // prepare postData, if parameters passed in
     if (!_.isEmpty(parameters)) {
-        var postData = JSON.stringify(parameters);
+
+        var paramArr = [];
+
+        for (key in parameters) {
+            paramArr.push({
+                "name": key,
+                "value": parameters[key]
+            });
+        }
+
+        var parameter = {"parameter": paramArr};
+
+        var jsonParametersString = JSON.stringify(parameter);
 
         jobOptions.headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': postData.length
+            'Content-Type': 'application/x-www-form-urlencoded'
         };
 
-        jobOptions.url += 'WithParameters';
+        postData = "json=" + jsonParametersString;
 
-        // for (key in parameters) {
-        //     jobOptions.url += encodeURIComponent(key) + '=' +
-        //     encodeURIComponent(parameters[key]) + '&';
-        // }
-
-        //postData = querystring.stringify(parameters);
+        console.log('PostData= ', postData);
     }
 
     core.makeRequest(jobOptions, function (data, statusCode) {
@@ -352,10 +361,7 @@ function handleParameters (parametersObj, keyEqualsVal) {
     var key = keyVal[0].trim();
 
     parametersObj[key] = keyVal[1].trim();
-    return parametersObj;
-
 }
-
 
 function isCallable (text) {
     return text.includes('jenkins');
@@ -405,6 +411,7 @@ function executePlugin (channel, callback, text) {
             var command = splitText[0].trim();
 
             var flagExpression = new RegExp('^([A-Za-z]) +(.*)$');
+
             var parameters = {};
 
             // traverse non-command terms of array

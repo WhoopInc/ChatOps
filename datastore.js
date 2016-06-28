@@ -1,5 +1,7 @@
 const _ = require('lodash');
 
+const config = require('./configenv.js');
+
 function DataStore () {
     this.dataStore = {};
 }
@@ -49,7 +51,7 @@ DataStore.prototype.remove = function (keys) {
     var current = this.dataStore;
 
     if (!_.has(this.dataStore, keys)) {
-        console.log('BAD KEY TO DS.REMOVE');
+        console.log('BAD KEYS TO DS.REMOVE');
     }
     else {
         for (var i = 0; i < keys.length - 1; i++) {
