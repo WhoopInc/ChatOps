@@ -426,7 +426,7 @@ function executePlugin (channel, callback, text) {
                     var info = found[2];
 
                     if (tag === 'p') {
-                        parameters = handleParameters(parameters, info);
+                        handleParameters(parameters, info);
                     }
                 }
             }
