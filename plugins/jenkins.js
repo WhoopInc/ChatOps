@@ -4,6 +4,7 @@ const querystring = require('querystring');
 
 const core = require('../core.js');
 const ds = require('../datastore.js');
+const config = require('../configenv.js');
 
 var jenkinsStore = new ds.DataStore();
 
@@ -12,6 +13,8 @@ var jenkinsStore = new ds.DataStore();
    * and notifies user.
    */
 function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
+
+    console.log('PARAMETERS: ', parameters);
 
     var urlExp = new RegExp('^https://(jenkins.whoop.com/.*)/$');
 
@@ -23,27 +26,28 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
     var postData;
 
     // prepare postData, if parameters passed in
-    if (parameters.length > 0) {
-        //var jsonParametersString = JSON.stringify({"parameter": [parameters]});
-        //var parameterParam = encodeURIComponent(jsonParametersString);
-        //parameters.json = parameterParam;
+    if (!_.isEmpty(parameters)) {
 
-        postData = JSON.stringify(parameters);
-        console.log('POST DATA: ', postData);
+        var paramArr = [];
+
+        for (key in parameters) {
+            paramArr.push({
+                "name": key,
+                "value": parameters[key]
+            });
+        }
+
+        var parameter = {"parameter": paramArr};
+
+        var jsonParametersString = JSON.stringify(parameter);
 
         jobOptions.headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': postData.length
+            'Content-Type': 'application/x-www-form-urlencoded'
         };
 
-        jobOptions.url += 'WithParameters';
+        postData = "json=" + jsonParametersString;
 
-        // for (key in parameters) {
-        //     jobOptions.url += encodeURIComponent(key) + '=' +
-        //     encodeURIComponent(parameters[key]) + '&';
-        // }
-
-        //postData = querystring.stringify(parameters);
+        console.log('PostData= ', postData);
     }
 
     core.makeRequest(jobOptions, function (data, statusCode) {
@@ -58,10 +62,11 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         }
 
         // parse data for commmon/known/expected errors.
-        else if (data && statusCode > 299) {
+        else {
 
             // check for missing parameter error
-            if (data.includes("Nothing is submitted") && statusCode === 400) {
+            if (data && data.includes("Nothing is submitted") &&
+                statusCode === 400) {
                 callback({
                     "id": 4,
                     "type": "message",
@@ -72,17 +77,17 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
                     statusCode + '.'
                 });
             }
-        }
 
-        // uncommon error, notify user
-        else {
-            callback({
-                "id": 4,
-                "type": "message",
-                "channel": channel,
-                "text": 'Request to ' + requestedJobObject.name +
-                ' failed with status code ' + statusCode + '.'
-            });
+            // uncommon error, notify user
+            else {
+                callback({
+                    "id": 4,
+                    "type": "message",
+                    "channel": channel,
+                    "text": 'Request to ' + requestedJobObject.name +
+                    ' failed with status code ' + statusCode + '.'
+                });
+            }
         }
     }, function (res) {
         var statusOptions = {
@@ -322,6 +327,7 @@ function handleListKeyword (listQuery, jobArray, outputMessage, callback,
             // if no listQuery, accumulate all entries.
             if (listQuery === '') {
                 outputMessage += item.name + '\n';
+                console.log('OUTPUT MESSAGE: ', outputMessage);
             }
         });
 
@@ -350,15 +356,11 @@ function handleListKeyword (listQuery, jobArray, outputMessage, callback,
 }
 
 
-function handleParameters (parametersArr, keyEqualsVal) {
+function handleParameters (parametersObj, keyEqualsVal) {
     var keyVal = keyEqualsVal.split("=");
     var key = keyVal[0].trim();
-    var paramObj = {};
-    paramObj[key] = keyVal[1].trim();
-    parametersArr.push(keyEqualsVal);
-   // parametersArr.push(keyVal[1].trim());
 
-    return parametersArr;
+    parametersObj[key] = keyVal[1].trim();
 }
 
 function isCallable (text) {
@@ -392,7 +394,7 @@ function executePlugin (channel, callback, text) {
     getFullJobList(function (jobArray) {
 
         // determine if list keyword present
-        var list = /(.*)list$/i.exec(query);
+        var list = /(.*) list$/i.exec(query);
 
         // LIST KEYWORD: bot should list all jobs [containing keyword]
         if (list) {
@@ -408,12 +410,13 @@ function executePlugin (channel, callback, text) {
             var splitText = query.split(" -");
             var command = splitText[0].trim();
 
-            var flagExpression = new RegExp('^([A-Za-z]) *(.*)$');
-            var parameters = [];
+            var flagExpression = new RegExp('^([A-Za-z]) +(.*)$');
+
+            var parameters = {};
 
             // traverse non-command terms of array
             for (var i = 1; i < splitText.length; i++) {
-                var found = flagExpression.exec(splitText[i]);
+                var found = flagExpression.exec(splitText[i].trim());
 
                 if (found) {
 
@@ -437,12 +440,12 @@ function executePlugin (channel, callback, text) {
             });
 
             if (exactMatch) {
-                console.log('PARAMETERS: ', parameters);
                 buildJenkinsJob(exactMatch, channel, callback, parameters);
             }
 
             // if no strict match, look for fuzzy match
             else {
+                console.log('FUZZY MATCH');
                 var inputs = command.split(" ");
 
                 // fold over matches for each keyword until found entries

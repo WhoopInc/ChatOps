@@ -34,11 +34,8 @@ function executePlugin (channel, callback, text, user) {
         }
 
         core.makeRequest(options, function (data, code) {
-            console.log(data, code);
             if (data.ok) {
                 outputChannel = data.channel.id;
-
-                console.log('TRIMMED HELP QUERY: ', helpQuery.trim());
 
                 if (helpQuery.trim() === '') {
                     for (key in plugins) {
@@ -48,8 +45,6 @@ function executePlugin (channel, callback, text, user) {
                 else {
                     for (key in plugins) {
                         var keyterm = new RegExp(key, 'i');
-
-                        console.log(keyterm);
 
                         if (keyterm.test(helpQuery)) {
                             outputMessage += plugins[key].helpDescription() +
@@ -69,7 +64,7 @@ function executePlugin (channel, callback, text, user) {
 
             }
             else {
-                console.log('FAILED W CODE ', code);
+                console.log('FAILED W CODE ' + code);
             }
 
         });

@@ -7,7 +7,6 @@ const users = require('../datastores/users.js');
 var datadogStore = new ds.DataStore();
 setInterval(updateAlerts, 600000);
 
-
 function isCallable (text) {
     return text.includes('datadog');
 }
@@ -161,6 +160,7 @@ function executePlugin (channel, callback, text, user) {
                             function (monitorData) {
                             if (monitorData.overall_state &&
                                 monitorData.overall_state !== 'OK') {
+
                                 // add entry to datastore
                                 ds.store(parsedID, user);
 
