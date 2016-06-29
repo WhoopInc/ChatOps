@@ -14,20 +14,22 @@ var view = {};
 
 view.env = _.chain(process.env)
 .pick(config.env, ['SLACK_API_TOKEN', 'GITHUB_API_TOKEN', 'GITHUB_USERNAME',
-    'DATADOG_API_KEY', 'DATADOG_APP_KEY'])
+    'DATADOG_API_KEY', 'DATADOG_APP_KEY', 'REFRESH_DATASTORE_INTERVAL_HOURS',
+    'PAPERTRAIL_URL','VERSION'])
 .reduce(function (acc, value, key) {
-    (acc || (acc = [])).push({ "name": key, "value": value, "comma": true });
+    acc.push({ "name": key, "value": value, "comma": true });
     return acc;
 }, [])
 .value();
 
-var version = _.chain(process.env)
-.pick(config.env, ['VERSION'])
-.reduce(function (acc, value, key) {
-    acc.push({ "name": key, "value": value, "comma": false });
-    return acc;
-}, view.env)
-.value();
+// set last item's comma field to false
+view.env[view.env.length - 1].comma = false;
+
+view.papertrail = function () {
+    return config.env.PAPERTRAIL_URL;
+}
+
+console.log(view.env);
 
 var output = Mustache.render(template, view);
 console.log(output);
