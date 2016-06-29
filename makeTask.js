@@ -29,8 +29,6 @@ view.papertrail = function () {
     return config.env.PAPERTRAIL_URL;
 }
 
-console.log(view.env);
-
 var output = Mustache.render(template, view);
 console.log(output);
 

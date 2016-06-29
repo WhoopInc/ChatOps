@@ -10,8 +10,8 @@
             "environment": [
                 {{#env}}
                 {
-                    "name": "{{name}}",
-                    "value": "{{value}}"
+                    "name": "{{{name}}}",
+                    "value": "{{{value}}}"
                 }{{#comma}},{{/comma}}
                 {{/env}}
             ],
@@ -20,7 +20,7 @@
             "logConfiguration": {
                 "logDriver": "syslog",
                 "options": {
-                    "syslog-address": "{{papertrail}}",
+                    "syslog-address": "{{{papertrail}}}",
                     "tag": "whoop"
                 }
             }
