@@ -1,6 +1,4 @@
 const _ = require('lodash');
-const xml = require('node-xml');
-const querystring = require('querystring');
 
 const core = require('../core.js');
 const ds = require('../datastore.js');
@@ -8,13 +6,234 @@ const config = require('../configenv.js');
 
 var jenkinsStore = new ds.DataStore();
 
-/* * Given a job object, makes a build request to object's URL and
-   * communicates to user on given channel. Checks for failed builds
-   * and notifies user.
+/* *    Flow:
+   * executePlugin (determines which operation, parses given parameters) =>
+   * checkParams (checks that required params are provided) =>
+   * buildJenkinsJob (executes build with parameters, if specified) =>
+   * checkJobStatus (makes continual requests until job is dequeued) =>
+   * leftJobInfo & updateLeftJobStatus(periodically check status of running jobs)
+   *
+   *    Helper Functions:
+   * handleParameters - parses "KEY=val" strings into parameter objects
+   * handleListKeyword - returns list of Jenkins jobs with (optional) keyword
+   * findMatches - finds Jenkins jobs that match keyword
+   * getFullJobList - returns list of all Jenkins jobs
    */
-function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
 
-    console.log('PARAMETERS: ', parameters);
+
+function isCallable (text) {
+    return text.includes('jenkins');
+}
+
+
+function helpDescription () {
+    return '_JENKINS_\nSend *jenkins [keyword] list* to list jenkins' +
+    ' jobs with specified keyword in name.\n' +
+    'Send *jenkins [job name]* to build a jenkins job. If the job name is ' +
+    'not exactly correct, bot will attempt to fuzzy match it to the ' +
+    'correct job.\n Send *jenkins [job name] -p KEY=value* to build a job ' +
+    'with parameters';
+}
+
+
+function getFullJobList (callback) {
+    var options = {
+        url: 'jenkins.whoop.com/api/json',
+        method: 'POST'
+    };
+
+    core.makeRequest(options, function (dataObject) {
+        callback(dataObject.jobs);
+    });
+}
+
+
+function findMatches (keyword, collection, additionalFun) {
+    var regexp = new RegExp(keyword, 'i');
+    var foundMatches = [];
+    var counter = 0;
+
+    collection.forEach(function (item) {
+        if (regexp !== '' && regexp.test(item.name)) {
+            foundMatches.push(item);
+        }
+
+        if (additionalFun) {
+            additionalFun(item);
+        }
+
+        counter++;
+    });
+
+    if (counter === collection.length) {
+        return foundMatches;
+    }
+}
+
+
+function handleListKeyword (listQuery, jobArray, outputMessage, callback,
+    channel) {
+    // if listQuery, acculumate matches to prefix.
+    var keywordMatches = findMatches(listQuery, jobArray,
+        function (item) {
+            // if no listQuery, accumulate all entries.
+            if (listQuery === '') {
+                outputMessage += item.name + '\n';
+                console.log('OUTPUT MESSAGE: ', outputMessage);
+            }
+        });
+
+    if (keywordMatches !== []) {
+        keywordMatches.forEach(function (match) {
+            outputMessage += match.name + '\n';
+
+        });
+
+        callback({
+            "id": 4,
+            "type": "message",
+            "channel": channel,
+            "text": '*Jenkins Jobs:*\n' + outputMessage
+        });
+    }
+    else {
+        callback({
+            "id": 4,
+            "type": "message",
+            "channel": channel,
+            "text": 'I could not find any jobs matching ' + listQuery +
+                '. Type "jenkins list" to see all jobs.'
+        });
+    }
+}
+
+
+function handleParameters (parametersObj, keyEqualsVal) {
+    var keyVal = keyEqualsVal.split("=");
+    var key = keyVal[0].trim();
+
+    parametersObj[key] = keyVal[1].trim();
+}
+
+
+function updateLeftJobStatus (jobName, callback, channel) {
+    var job = jenkinsStore.get([jobName]);
+
+    if (job.result !== 'SUCCESS' &&
+        job.result !== 'FAILURE') {
+
+        leftJobInfo(callback, channel, job.url);
+
+        setTimeout(function () {
+            updateLeftJobStatus(jobName, callback, channel);
+        }, 5 * 60 * 1000);
+    }
+    else {
+        jenkinsStore.remove([jobName]);
+    }
+}
+
+
+function leftJobInfo (callback, channel, checkUrl) {
+    var shortDescription;
+    var fullDisplayName;
+    var result;
+    var duration;
+
+    var outputInfo = {};
+
+    var urlExp = new RegExp('^https://(jenkins.whoop.com/.*)/$');
+
+    var newOptions = {
+        "url": checkUrl.replace(urlExp, '$1/api/json')
+    };
+
+    core.makeRequest(newOptions, function (data) {
+        //console.log('LEFT DATA: ', data);
+
+        if (!data.result) {
+            // if not finished immediately, store it in jenkinsStore for later
+            jenkinsStore.store([data.fullDisplayName, 'duration', data.duration]);
+            jenkinsStore.store([data.fullDisplayName, 'url', data.url]);
+            jenkinsStore.store([data.fullDisplayName, 'result', null]);
+
+            // check status in 30 seconds
+            setTimeout(function () {
+                updateLeftJobStatus(data.fullDisplayName, callback, channel);
+            }, 30 * 1000);
+
+        }
+        else {
+            // if finished immediately, don't store details in jenkinsStore
+
+            // notify user of status
+            callback({
+                "id": 4,
+                "type": "message",
+                "channel": channel,
+                "text": data.fullDisplayName + ' finished with result ' +
+                data.result + ' after ' + data.duration
+            });
+        }
+
+    }, null);
+}
+
+
+function checkJobStatus (options, callback, channel, param, checkUrl) {
+    var outputInfo = {};
+
+    // while <waitingItem>
+    if (!checkUrl) {
+        var name;
+        var shortDescription;
+
+        core.makeRequest(options, function (data) {
+            console.log('DATA: ', data);
+
+            if (param) {
+                if (!data.inQueue) {
+                    callback({
+                        "id": 4,
+                        "type": "message",
+                        "channel": channel,
+                        "text": data.name + ' left the queue.'
+                    })
+                    checkJobStatus(options, callback, channel, true, data.lastBuild.url);
+                }
+                else {
+                    checkJobStatus(options, callback, channel, true);
+                }
+            }
+            else {
+                if (data.executable) {
+                    callback({
+                        "id": 4,
+                        "type": "message",
+                        "channel": channel,
+                        "text": data.task.name + ' left the queue.'
+                    })
+
+                    checkJobStatus(options, callback, channel, false, data.executable.url);
+                }
+                else {
+                    checkJobStatus(options, callback, channel, false)
+                }
+
+            }
+
+
+        }, null);
+    }
+
+    // called once after item leaves queue
+    else {
+        leftJobInfo(callback, channel, checkUrl);
+    }
+}
+
+
+function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
 
     var urlExp = new RegExp('^https://(jenkins.whoop.com/.*)/$');
 
@@ -91,297 +310,111 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
         }
     }, function (res) {
         var statusOptions = {
-            url: res.headers.location.split('//').pop() + 'api/xml'
+            url: res.headers.location.split('//').pop() + 'api/json'
         };
 
-        checkJobStatus(statusOptions, callback, channel);
+        if (!_.isEmpty(parameters)) {
+            checkJobStatus(statusOptions, callback, channel, true);
+        }
+        else {
+            checkJobStatus(statusOptions, callback, channel, false);
+        }
+
     }, postData);
 }
 
-function leftJobInfo (callback, channel, checkUrl) {
-    var shortDescription;
-    var fullDisplayName;
-    var result;
-    var duration;
 
-    var outputInfo = {};
+function checkParams (requestedJobObject, inputParams, callback1, channel, callback2) {
+    var requiredParams = [];
+    var missingParams = [];
 
-    var newOptions = {
-        url: checkUrl + 'api/xml'
-    };
+    var urlExp = new RegExp('^https://(jenkins.whoop.com/.*)/$');
 
-    core.makeRequest(newOptions, function (data) {
-
-        // catch wanted XML information from data
-        var parser = new xml.SaxParser(function(cb) {
-            cb.onStartElementNS(function(elem) {
-                if (elem === 'result') {
-                    cb.onCharacters(function(chars) {
-                        result = chars;
-                    });
-                }
-
-                if (elem === 'fullDisplayName') {
-                    cb.onCharacters(function(chars) {
-                        fullDisplayName = chars;
-                    });
-                }
-
-                if (elem === 'shortDescription') {
-                    cb.onCharacters(function(chars) {
-                        shortDescription = chars;
-                    });
-                }
-
-                if (elem === 'duration') {
-                    cb.onCharacters(function(chars) {
-                        duration = chars;
-                    });
-                }
-            });
-
-            cb.onEndElementNS(function(elem) {
-                if (elem === 'result') {
-                    outputInfo.result = result;
-                }
-
-                if (elem === 'fullDisplayName') {
-                    outputInfo.fullDisplayName = fullDisplayName;
-                }
-
-                if (elem === 'shortDescription') {
-                    outputInfo.shortDescription = shortDescription;
-                }
-
-                if (elem === 'duration') {
-                    outputInfo.duration = duration;
-                }
-            });
-        });
-
-        parser.parseString(data);
-
-        // make appropriate entry in jenkinsStore
-        if (outputInfo.fullDisplayName &&
-            outputInfo.duration) {
-
-            jenkinsStore.store([outputInfo.fullDisplayName, 'duration',
-                outputInfo.duration]);
-            jenkinsStore.store([outputInfo.fullDisplayName, 'url', checkUrl]);
-
-            if (outputInfo.result) {
-                jenkinsStore.store([outputInfo.fullDisplayName, 'result',
-                    outputInfo.result.toString()]);
-
-                if (outputInfo.shortDescription) {
-                    callback({
-                        "id": 4,
-                        "type": "message",
-                        "channel": channel,
-                        "text": outputInfo.fullDisplayName + ' (' +
-                        outputInfo.shortDescription + ') finished with ' +
-                        'result ' + outputInfo.result + ' after ' +
-                        outputInfo.duration
-                    });
-                }
-            }
-            else {
-                jenkinsStore.store([outputInfo.fullDisplayName, 'result',
-                    'null']);
-            }
-        }
-    }, function (res) {});
-}
-
-
-function checkJobStatus (options, callback, channel, checkUrl) {
-    var outputInfo = {};
-
-    // while <waitingItem>
-    if (!checkUrl) {
-        var name;
-        var shortDescription;
-
-        core.makeRequest(options, function (data) {
-
-            var parser = new xml.SaxParser(function(cb) {
-                cb.onStartElementNS(function(elem) {
-                    if (elem === 'name') {
-                        cb.onCharacters(function(chars) {
-                            name = chars;
-                        });
-                    }
-
-                    if (elem === 'shortDescription') {
-                        cb.onCharacters(function(chars) {
-                            shortDescription = chars;
-                        });
-                    }
-
-                    if (elem === 'executable') {
-                        cb.onStartElementNS(function(eleme) {
-                            if (eleme === 'url') {
-                                cb.onCharacters(function(chars) {
-                                    var urlExp = new RegExp
-                                    ('^https://(jenkins.whoop.com/.*)$');
-
-                                    checkUrl = chars.replace(urlExp, '$1');
-
-                                    outputInfo.checkUrl = checkUrl;
-                                });
-                            }
-                        });
-                    }
-                });
-
-                cb.onEndElementNS(function (elem) {
-                    if (elem === 'name') {
-                        outputInfo.name = name;
-                    }
-
-                    if (elem === 'shortDescription') {
-                        outputInfo.shortDescription = shortDescription;
-                    }
-                });
-            });
-
-            parser.parseString(data);
-
-            if (outputInfo.name && outputInfo.shortDescription &&
-                outputInfo.checkUrl) {
-                callback({
-                    "id": 4,
-                    "type": "message",
-                    "channel": channel,
-                    "text": outputInfo.name + ' (' +
-                    outputInfo.shortDescription + ') left the queue.'
-                });
-
-                checkJobStatus(options, callback, channel, outputInfo.checkUrl);
-            }
-
-            if (!checkUrl) {
-                checkJobStatus(options, callback, channel);
-            }
-
-        }, function (res) {});
-    }
-
-    // called once after item leaves queue
-    else {
-        leftJobInfo(callback, channel, checkUrl);
-    }
-}
-
-/* * Retrieves list of all jenkins jobs, prepares to manipulate list.
-   * In future iterations this function should be replaced by a cache
-   * or other within-app memory.
-   */
-function getFullJobList (callback) {
     var options = {
-        url: 'jenkins.whoop.com/api/json',
-        method: 'POST'
+        "url": requestedJobObject.url.replace(urlExp, '$1/api/json')
     };
 
-    core.makeRequest(options, function (dataObject) {
-        callback(dataObject.jobs);
-    });
-}
+    // retrieve parameter definitions, filter for required ones
+    core.makeRequest(options, function (data) {
 
+        console.log(data.actions);
 
-/* * Given a keyword, finds matching entries in collection.
-   * While iterating through collection, performs optional additional
-   * functions. This eliminates need for multiple traversals of
-   * collections.
-   */
-function findMatches (keyword, collection, additionalFun) {
-    var regexp = new RegExp(keyword, 'i');
-    var foundMatches = [];
-    var counter = 0;
+        for (var i = 0; i < data.actions.length; i++) {
 
-    collection.forEach(function (item) {
-        if (regexp !== '' && regexp.test(item.name)) {
-            foundMatches.push(item);
+            var paramDefs = data.actions[i].parameterDefinitions;
+
+            if (paramDefs) {
+
+                for (var j = 0; j < paramDefs.length; j++) {
+
+                    if (paramDefs[j].type === 'StringParameterDefinition'
+                        && paramDefs[j].defaultParameterValue.value === '') {
+
+                        requiredParams.push(paramDefs[j]);
+                    }
+
+                    if (paramDefs[j].type === 'PT_TAG' ||
+                        paramDefs[j].type === 'PT_BRANCH' ||
+                        paramDefs[j].type === 'PT_BRANCH_TAG') {
+
+                        if (paramDefs[j].defaultParameterValue === null) {
+                            requiredParams.push(paramDefs[j]);
+                        }
+                    }
+
+                }
+            }
+
+            console.log('REQUIRED PARAMS: ', requiredParams);
+
+            break;
         }
 
-        if (additionalFun) {
-            additionalFun(item);
-        }
+        requiredParams.forEach(function (param) {
+            var paramName = param.name;
 
-        counter++;
-    });
-
-    if (counter === collection.length) {
-        return foundMatches;
-    }
-}
-
-/* * Lists jenkins jobs that include keyword listQuery, if specified.
-   * If none found, notify user.
-   */
-function handleListKeyword (listQuery, jobArray, outputMessage, callback,
-    channel) {
-    // if listQuery, acculumate matches to prefix.
-    var keywordMatches = findMatches(listQuery, jobArray,
-        function (item) {
-            // if no listQuery, accumulate all entries.
-            if (listQuery === '') {
-                outputMessage += item.name + '\n';
-                console.log('OUTPUT MESSAGE: ', outputMessage);
+            if (!inputParams[paramName]) {
+                missingParams.push(param);
+                console.log('MISSING');
             }
         });
 
-    if (keywordMatches !== []) {
-        keywordMatches.forEach(function (match) {
-            outputMessage += match.name + '\n';
+        console.log('MISSING PARAMS: ', missingParams);
 
-        });
+        var outputMessage = '';
+        if (missingParams.length > 0) {
+            outputMessage += 'The parameter(s)\n';
+            missingParams.forEach(function (param) {
+                outputMessage += param.name;
 
-        callback({
-            "id": 4,
-            "type": "message",
-            "channel": channel,
-            "text": '*Jenkins Jobs:*\n' + outputMessage
-        });
-    }
-    else {
-        callback({
-            "id": 4,
-            "type": "message",
-            "channel": channel,
-            "text": 'I could not find any jobs matching ' + listQuery +
-                '. Type "jenkins list" to see all jobs.'
-        });
-    }
+                if (param.description) {
+                    outputMessage += ' (' + param.description + ')';
+                }
+
+                outputMessage += '\n';
+            });
+
+            outputMessage += 'are also needed to run this job. Specify ' +
+            'parameters with -p KEY=value';
+
+            callback1({
+                "id": 4,
+                "type": "message",
+                "channel": channel,
+                "text": outputMessage
+            });
+
+            return false;
+
+        }
+
+        else {
+            callback2(requestedJobObject, channel, callback1, inputParams);
+        }
+
+    });
 }
 
-
-function handleParameters (parametersObj, keyEqualsVal) {
-    var keyVal = keyEqualsVal.split("=");
-    var key = keyVal[0].trim();
-
-    parametersObj[key] = keyVal[1].trim();
-}
-
-function isCallable (text) {
-    return text.includes('jenkins');
-}
-
-
-function helpDescription () {
-    return '_JENKINS_\nSend *jenkins [keyword] list* to list jenkins' +
-    ' jobs with specified keyword in name.\n' +
-    'Send *jenkins [job name]* to build a jenkins job. If the job name is ' +
-    'not exactly correct, bot will attempt to fuzzy match it to the ' +
-    'correct job.\n Send *jenkins [job name] -p KEY=value* to build a job ' +
-    'with parameters';
-}
-
-
-/* * Given text given by the user, determines which operation to run.
-   * Commands without
-   * keywords attempt to execute a jenkins job.
-   */
 
 function executePlugin (channel, callback, text) {
 
@@ -440,12 +473,12 @@ function executePlugin (channel, callback, text) {
             });
 
             if (exactMatch) {
-                buildJenkinsJob(exactMatch, channel, callback, parameters);
+                checkParams(exactMatch, parameters, callback, channel,
+                    buildJenkinsJob);
             }
 
             // if no strict match, look for fuzzy match
             else {
-                console.log('FUZZY MATCH');
                 var inputs = command.split(" ");
 
                 // fold over matches for each keyword until found entries
@@ -456,8 +489,8 @@ function executePlugin (channel, callback, text) {
 
                 // if only one match found at end, execute the job
                 if (finalMatches.length === 1) {
-                    buildJenkinsJob(finalMatches[0], channel, callback,
-                        parameters);
+                    checkParams(finalMatches[0], parameters, callback, channel,
+                    buildJenkinsJob);
                 }
                 // if more than one final match, ask user if they
                 // meant one of the matches
@@ -488,27 +521,6 @@ function executePlugin (channel, callback, text) {
     });
 }
 
-function updateNulls (msgCB) {
-    var nullResults = [];
-
-    // retrieve builds with null results from jenkinsStore
-    _.forEach(this.dataStore, function (value, key) {
-        if (value[result] !== 'SUCCESS' && value[result] !== 'FAILURE') {
-            nullResults.push({
-                "name": key,
-                "url": value[url]});
-        }
-    });
-
-    if (nullResults.length > 0) {
-        nullResults.forEach(function(build) {
-            core.makeRequest({url: build.url + 'api/xml'},
-                function (data) {
-
-                });
-        });
-    }
-}
 
 module.exports = {
     isCallable: isCallable,
