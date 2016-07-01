@@ -78,7 +78,7 @@ function executePlugin (channel, callback, text, user) {
     if (reqType[1].trim() === '') {
         core.paginate({url: 'api.github.com/orgs/WhoopInc/repos'},
             function(repoArray) {
-                getPRfromRepos(repoArray, channel);
+                getPRfromRepos(repoArray, channel, callback);
             });
     }
 
