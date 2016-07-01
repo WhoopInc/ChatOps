@@ -28,6 +28,7 @@ MessageBroker.prototype.push = function (item) {
 };
 
 MessageBroker.prototype.init = function () {
+    this.queue = [];
     setInterval(this.sendMessage.bind(this), 1500);
 };
 

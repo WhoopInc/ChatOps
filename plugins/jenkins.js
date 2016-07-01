@@ -48,46 +48,26 @@ function getFullJobList (callback) {
 }
 
 
-function findMatches (keyword, collection, additionalFun) {
+function findMatches (keyword, collection) {
     var regexp = new RegExp(keyword, 'i');
     var foundMatches = [];
-    var counter = 0;
 
     collection.forEach(function (item) {
-        if (regexp !== '' && regexp.test(item.name)) {
+        if (regexp.test(item.name)) {
             foundMatches.push(item);
         }
-
-        if (additionalFun) {
-            additionalFun(item);
-        }
-
-        counter++;
     });
 
-    if (counter === collection.length) {
-        return foundMatches;
-    }
+    return foundMatches;
 }
 
 
-function handleListKeyword (listQuery, jobArray, outputMessage, callback,
-    channel) {
-    // if listQuery, acculumate matches to prefix.
-    var keywordMatches = findMatches(listQuery, jobArray,
-        function (item) {
-            // if no listQuery, accumulate all entries.
-            if (listQuery === '') {
-                outputMessage += item.name + '\n';
-                console.log('OUTPUT MESSAGE: ', outputMessage);
-            }
-        });
-
-    if (keywordMatches !== []) {
-        keywordMatches.forEach(function (match) {
-            outputMessage += match.name + '\n';
-
-        });
+function handleListKeyword (listQuery, jobArray, outputMessage, callback, channel) {
+    // if no listQuery, accumulate list of all jobs
+    if (listQuery.trim() === '') {
+        jobArray.forEach(function (job) {
+            outputMessage += job.name + '\n';
+        })
 
         callback({
             "id": 4,
@@ -96,14 +76,33 @@ function handleListKeyword (listQuery, jobArray, outputMessage, callback,
             "text": '*Jenkins Jobs:*\n' + outputMessage
         });
     }
+    // if listQuery, acculumate matches to prefix.
     else {
-        callback({
-            "id": 4,
-            "type": "message",
-            "channel": channel,
-            "text": 'I could not find any jobs matching ' + listQuery +
-                '. Type "jenkins list" to see all jobs.'
-        });
+        var keywordMatches = findMatches(listQuery, jobArray);
+
+        // if there are matches, output them
+        if (keywordMatches !== []) {
+            keywordMatches.forEach(function (match) {
+                outputMessage += match.name + '\n';
+            });
+
+            callback({
+                "id": 4,
+                "type": "message",
+                "channel": channel,
+                "text": '*Jenkins Jobs:*\n' + outputMessage
+            });
+        }
+        // if no matches, notify users
+        else {
+            callback({
+                "id": 4,
+                "type": "message",
+                "channel": channel,
+                "text": 'I could not find any jobs matching ' + listQuery +
+                    '. Type "jenkins list" to see all jobs.'
+            });
+        }
     }
 }
 
@@ -149,7 +148,6 @@ function leftJobInfo (callback, channel, checkUrl) {
     };
 
     core.makeRequest(newOptions, function (data) {
-        //console.log('LEFT DATA: ', data);
 
         if (!data.result) {
             // if not finished immediately, store it in jenkinsStore for later
@@ -189,7 +187,6 @@ function checkJobStatus (options, callback, channel, param, checkUrl) {
         var shortDescription;
 
         core.makeRequest(options, function (data) {
-            console.log('DATA: ', data);
 
             if (param) {
                 if (!data.inQueue) {
@@ -337,8 +334,6 @@ function checkParams (requestedJobObject, inputParams, callback1, channel, callb
     // retrieve parameter definitions, filter for required ones
     core.makeRequest(options, function (data) {
 
-        console.log(data.actions);
-
         for (var i = 0; i < data.actions.length; i++) {
 
             var paramDefs = data.actions[i].parameterDefinitions;
@@ -375,7 +370,6 @@ function checkParams (requestedJobObject, inputParams, callback1, channel, callb
 
             if (!inputParams[paramName]) {
                 missingParams.push(param);
-                console.log('MISSING');
             }
         });
 
@@ -427,7 +421,7 @@ function executePlugin (channel, callback, text) {
     getFullJobList(function (jobArray) {
 
         // determine if list keyword present
-        var list = /(.*) list$/i.exec(query);
+        var list = /(.*)list$/i.exec(query);
 
         // LIST KEYWORD: bot should list all jobs [containing keyword]
         if (list) {
