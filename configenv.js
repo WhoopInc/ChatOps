@@ -10,6 +10,7 @@ for (term in process.env) {
 if (!env.SLACK_API_TOKEN || !env.GITHUB_API_TOKEN ||
     !env.GITHUB_USERNAME || !env.DATADOG_API_KEY ||
     !env.DATADOG_APP_KEY) {
+    console.log('EXITING WITH ENV: ', env);
     process.exit(2);
 }
 
