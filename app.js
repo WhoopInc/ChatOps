@@ -72,6 +72,7 @@ function onEvent (event, soc) {
 // when HTTPS request finished, initialize WebSocket and handle events
 function initializeWebSocket(data) {
 
+    console.log('INITIALIZING WS');
     var socket = new WebSocket(data.url);
 
     var memberChannels = [];

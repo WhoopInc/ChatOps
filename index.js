@@ -1,3 +1,5 @@
+console.log('PRE-CONFIG');
+
 const config = require('./configenv.js');
 const app = require('./app.js');
 const core = require('./core.js');
