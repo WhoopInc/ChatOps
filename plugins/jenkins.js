@@ -130,8 +130,8 @@ function updateLeftJobStatus (jobName, callback, channel) {
 }
 
 function storeLeftJobStatus(jobName, duration, url, result, timeout, callback, channel) {
-    jenkinsStore.store([jobName, 'duration', data.duration]);
-    jenkinsStore.store([jobName, 'url', data.url]);
+    jenkinsStore.store([jobName, 'duration', duration]);
+    jenkinsStore.store([jobName, 'url', url]);
     jenkinsStore.store([jobName, 'result', null]);
 
     if (jenkinsStore.get([jobName])['timer']) {
@@ -300,6 +300,8 @@ function buildJenkinsJob (requestedJobObject, channel, callback, parameters) {
 
             // uncommon error, notify user
             else {
+                console.log(data);
+
                 callback({
                     "id": 4,
                     "type": "message",
