@@ -67,7 +67,7 @@ function handleListKeyword (listQuery, jobArray, outputMessage, callback, channe
     if (listQuery.trim() === '') {
         jobArray.forEach(function (job) {
             outputMessage += job.name + '\n';
-        })
+        });
 
         callback({
             "id": 4,
@@ -195,7 +195,7 @@ function checkJobStatus (options, callback, channel, param, checkUrl) {
                         "type": "message",
                         "channel": channel,
                         "text": data.name + ' left the queue.'
-                    })
+                    });
                     checkJobStatus(options, callback, channel, true, data.lastBuild.url);
                 }
                 else {
@@ -209,12 +209,12 @@ function checkJobStatus (options, callback, channel, param, checkUrl) {
                         "type": "message",
                         "channel": channel,
                         "text": data.task.name + ' left the queue.'
-                    })
+                    });
 
                     checkJobStatus(options, callback, channel, false, data.executable.url);
                 }
                 else {
-                    checkJobStatus(options, callback, channel, false)
+                  checkJobStatus(options, callback, channel, false);
                 }
 
             }
