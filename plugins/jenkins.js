@@ -122,16 +122,28 @@ function updateLeftJobStatus (jobName, callback, channel) {
         job.result !== 'FAILURE') {
 
         leftJobInfo(callback, channel, job.url);
-
-        setTimeout(function () {
-            updateLeftJobStatus(jobName, callback, channel);
-        }, 5 * 60 * 1000);
     }
     else {
+        clearTimeout(job.timer);
         jenkinsStore.remove([jobName]);
     }
 }
 
+function storeLeftJobStatus(jobName, duration, url, result, timeout, callback, channel) {
+    jenkinsStore.store([jobName, 'duration', data.duration]);
+    jenkinsStore.store([jobName, 'url', data.url]);
+    jenkinsStore.store([jobName, 'result', null]);
+
+    if (jenkinsStore.get([jobName])['timer']) {
+      clearTimeout(jenkinsStore.get([jobName])['timer']);
+    }
+
+    var timer = setTimeout(function () {
+      updateLeftJobStatus(jobName, callback, channel);
+    }, 30 * 1000);
+
+    jenkinsStore.store([jobName, 'timer', timer]);
+}
 
 function leftJobInfo (callback, channel, checkUrl) {
     var shortDescription;
@@ -151,15 +163,7 @@ function leftJobInfo (callback, channel, checkUrl) {
 
         if (!data.result) {
             // if not finished immediately, store it in jenkinsStore for later
-            jenkinsStore.store([data.fullDisplayName, 'duration', data.duration]);
-            jenkinsStore.store([data.fullDisplayName, 'url', data.url]);
-            jenkinsStore.store([data.fullDisplayName, 'result', null]);
-
-            // check status in 30 seconds
-            setTimeout(function () {
-                updateLeftJobStatus(data.fullDisplayName, callback, channel);
-            }, 30 * 1000);
-
+          storeLeftJobStatus(data.fullDisplayName, data.duration, data.url, null, 30*1000, callback, channel);
         }
         else {
             // if finished immediately, don't store details in jenkinsStore
