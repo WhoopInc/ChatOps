@@ -24,7 +24,11 @@ function onOpen (soc, channelIDs) {
         console.log(store);
         var alias = stores[store.split('.js')[0]]
         alias = require('./datastores/' + store.toString());
-        alias.fetch();
+
+        if (alias !== 'gitteams') {
+            alias.fetch();
+        }
+
     });
 
     stores.forEach(function(store) {
