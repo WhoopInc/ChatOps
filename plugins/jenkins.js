@@ -20,12 +20,6 @@ var jenkinsStore = new ds.DataStore();
    * getFullJobList - returns list of all Jenkins jobs
    */
 
-<<<<<<< Updated upstream
-=======
-    console.log('PARAMETERS: ', parameters);
-
-    var urlExp = new RegExp('^https://(jenkins.whoop.com/.*)/$');
->>>>>>> Stashed changes
 
 function isCallable (text) {
     return text.includes('jenkins');
@@ -53,7 +47,6 @@ function getFullJobList (callback) {
     });
 }
 
-<<<<<<< Updated upstream
 
 function findMatches (keyword, collection) {
     var regexp = new RegExp(keyword, 'i');
@@ -82,31 +75,6 @@ function handleListKeyword (listQuery, jobArray, outputMessage, callback, channe
             "channel": channel,
             "text": '*Jenkins Jobs:*\n' + outputMessage
         });
-=======
-    // prepare postData, if parameters passed in
-    if (!_.isEmpty(parameters)) {
-
-        var paramArr = [];
-
-        for (key in parameters) {
-            paramArr.push({
-                "name": key,
-                "value": parameters[key]
-            });
-        }
-
-        var parameter = {"parameter": paramArr};
-
-        var jsonParametersString = JSON.stringify(parameter);
-
-        jobOptions.headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        };
-
-        postData = "json=" + jsonParametersString;
-
-        console.log('PostData= ', postData);
->>>>>>> Stashed changes
     }
     // if listQuery, acculumate matches to prefix.
     else {
@@ -413,7 +381,6 @@ function checkParams (requestedJobObject, inputParams, callback1, channel, callb
 
         console.log('MISSING PARAMS: ', missingParams);
 
-<<<<<<< Updated upstream
         var outputMessage = '';
         if (missingParams.length > 0) {
             outputMessage += 'The parameter(s)\n';
@@ -423,16 +390,6 @@ function checkParams (requestedJobObject, inputParams, callback1, channel, callb
                 if (param.description) {
                     outputMessage += ' (' + param.description + ')';
                 }
-=======
-function handleParameters (parametersObj, keyEqualsVal) {
-    var keyVal = keyEqualsVal.split("=");
-    var key = keyVal[0].trim();
-    parametersObj[key] = keyVal[1].trim();
-    //parametersArr.push(keyEqualsVal);
-   // parametersArr.push(keyVal[1].trim());
-
-}
->>>>>>> Stashed changes
 
                 outputMessage += '\n';
             });
@@ -486,12 +443,8 @@ function executePlugin (channel, callback, text) {
             var splitText = query.split(" -");
             var command = splitText[0].trim();
 
-<<<<<<< Updated upstream
             var flagExpression = new RegExp('^([A-Za-z]) +(.*)$');
 
-=======
-            var flagExpression = new RegExp('^([A-Za-z]) *(.*)$');
->>>>>>> Stashed changes
             var parameters = {};
 
             // traverse non-command terms of array
