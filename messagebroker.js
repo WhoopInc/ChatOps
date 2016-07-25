@@ -1,4 +1,6 @@
-const _ = require('lodash');
+const _ = require('lodash')
+    , slackutils = require('./slackutils')
+    ;
 
 function MessageBroker (soc) {
     this.socket = soc;
@@ -13,8 +15,7 @@ MessageBroker.prototype.sendMessage = function () {
 
         var val = this.queue.pop();
 
-        if (_.includes(whitelistChannels, val.channel) ||
-            /^D/.test(val.channel)) {
+        if (_.includes(whitelistChannels, val.channel) || slackutils.isDMChannel(val.channel)) {
             this.socket.send(JSON.stringify(val));
         }
     }
