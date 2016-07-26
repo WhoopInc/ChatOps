@@ -49,7 +49,7 @@ function makeRequest (object, callback, responseCB, postData) {
             res.resume();
         });
 
-        res.on('close', function () {
+        res.on('end', function () {
             // first assume accumulator is JSON object
             var responseContent;
             try {
