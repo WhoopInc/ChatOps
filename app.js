@@ -95,7 +95,7 @@ function initializeWebSocket (data) {
     });
 
     socket.on('close', function close() {
-s        console.log('disconnected');
+        console.log('disconnected (received close)');
         memberChannels.forEach(function (channelID) {
             mb.send({
                 "id": 1,
@@ -109,6 +109,7 @@ s        console.log('disconnected');
     });
 
     process.once('SIGTERM', function () {
+        console.log('disconnected (sigterm)');
         memberChannels.forEach(function (channelID) {
             mb.send({
                 "id": 1,
