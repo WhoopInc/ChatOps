@@ -13,7 +13,7 @@ MessageBroker.prototype.sendMessage = function () {
 
         var val = this.queue.pop();
 
-        if (_.includes(whitelistChannels, val.channel) ||
+        if (_.includes(this.whitelist, val.channel) ||
             /^D/.test(val.channel)) {
             this.socket.send(JSON.stringify(val));
         }
@@ -24,27 +24,24 @@ MessageBroker.prototype.push = function (item) {
     if (item) {
         this.queue.push(item);
     }
-
 };
 
 MessageBroker.prototype.init = function () {
+    console.log('INIT');
     this.queue = [];
     setInterval(this.sendMessage.bind(this), 1500);
 };
 
+
+// instance of messagebroker
 var messageBroker;
 
-// channels bot can talk on
-var whitelistChannels = ['C1DNMQSCD', // #botdev
-                         'C1BBWJ7PF' // #bottest
-                         ];
-
+// functions for other modules to interact with messagebroker
 function initialize(sock) {
     if (!messageBroker) {
         messageBroker = new MessageBroker(sock);
         messageBroker.init();
-    }
-    else {
+    } else {
         throw "messageBroker already exists";
     }
 
@@ -53,8 +50,7 @@ function initialize(sock) {
 function send(item) {
     if (messageBroker) {
         messageBroker.push(item);
-    }
-    else {
+    } else {
         throw "messageBroker disconnected";
     }
 

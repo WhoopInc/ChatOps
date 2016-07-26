@@ -70,7 +70,7 @@ function onEvent (event, soc) {
 }
 
 // when HTTPS request finished, initialize WebSocket and handle events
-function initializeWebSocket(data) {
+function initializeWebSocket (data) {
 
     console.log('INITIALIZING WS');
     var socket = new WebSocket(data.url);
@@ -95,7 +95,7 @@ function initializeWebSocket(data) {
     });
 
     socket.on('close', function close() {
-        console.log('disconnected');
+s        console.log('disconnected');
         memberChannels.forEach(function (channelID) {
             mb.send({
                 "id": 1,
