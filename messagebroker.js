@@ -37,7 +37,7 @@ MessageBroker.prototype.init = function () {
 var messageBroker;
 
 // functions for other modules to interact with messagebroker
-function initialize(sock) {
+function initialize (sock) {
     if (!messageBroker) {
         messageBroker = new MessageBroker(sock);
         messageBroker.init();
@@ -47,21 +47,25 @@ function initialize(sock) {
 
 }
 
-function send(item) {
+function send (item) {
     if (messageBroker) {
         messageBroker.push(item);
     } else {
         throw "messageBroker disconnected";
     }
-
 }
 
-function destroy() {
+function destroy () {
     messageBroker = undefined;
+}
+
+function exists () {
+    return messageBroker !== undefined;
 }
 
 module.exports = {
     initialize: initialize,
     send: send,
-    destroy: destroy
+    destroy: destroy,
+    exists: exists
 };
