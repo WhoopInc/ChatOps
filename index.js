@@ -2,7 +2,6 @@ const CronJob = require('cron').CronJob;
 const config = require('./configenv.js');
 const app = require('./app.js');
 const core = require('./core.js');
-const mb = require('./messagebroker.js');
 
 // contents of HTTPS server request
 var options = {
