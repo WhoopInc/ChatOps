@@ -95,7 +95,7 @@ function executePlugin (channel, callback, text, user) {
                         "text": 'You have exceeded the limit of 10 answer options.'
                     });
 
-                    break;
+                    return;
                 }
 
                 // else format message
@@ -113,7 +113,6 @@ function executePlugin (channel, callback, text, user) {
             });
         }
     }
-
 }
 
 module.exports = {

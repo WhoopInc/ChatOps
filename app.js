@@ -69,6 +69,19 @@ function onEvent (event, soc) {
     }
 }
 
+
+function lunchTrain () {
+    if (mb.exists()) {
+        mb.send({
+            "id": 9,
+            "type": "message",
+            "channel": "C1DNMQSCD",
+            "text": "Lunch?\n:one: Now!\n:two: 10-20 minutes\n:three: Not " +
+            "in the foreseeable future"
+        });
+    }
+}
+
 // when HTTPS request finished, initialize WebSocket and handle events
 function initializeWebSocket (data) {
 
@@ -91,7 +104,6 @@ function initializeWebSocket (data) {
     // handle incoming messages
     socket.on('message', function(event) {
         onEvent(event, socket);
-
     });
 
     socket.on('close', function close() {
@@ -121,10 +133,10 @@ function initializeWebSocket (data) {
             mb.destroy();
         });
     });
-
 }
 
 
 module.exports = {
-    initializeWebSocket: initializeWebSocket
+    initializeWebSocket: initializeWebSocket,
+    lunchTrain: lunchTrain
 };
