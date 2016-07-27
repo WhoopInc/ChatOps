@@ -46,7 +46,7 @@ plugins must satisfy a few requirements:
     messagebroker.send() function.
 *   `helpDescription()` returns a string that will be appended to the other
     help descriptions when the `chatops help` command is called. The string
-    should have the form `_[Plugin Name]_\n[Explanation of plugin including
+    should have the form `_[PLUGIN NAME]_\n[Explanation of plugin including
     invocation command and constraints]`
 
 
