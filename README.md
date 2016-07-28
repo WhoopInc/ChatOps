@@ -40,7 +40,8 @@ accessible from any module, but are almost always invoked in app.js. The
 In order to maintain the ability to call all plugins in the same way, new
 plugins must satisfy a few requirements:
 *   `isCallable(text)` returns a boolean indicating whether the incoming
-    string `text` satisfies the criteria to execute the function. This function is usually a RegExp test
+    string `text` satisfies the criteria to execute the function. This
+    function is usually a RegExp test
 *   `executePlugin(channel, callback, text, user)` uses the parameter
     information to perform an operation. Callback is always the
     messagebroker.send() function.
@@ -50,3 +51,60 @@ plugins must satisfy a few requirements:
     invocation command and constraints]`
 
 
+### Environment Variables ###
+<table>
+    <tr>
+        <td><b>Var Name</b></td>
+        <td><b>Purpose</b></td>
+        <td><b>Dev vs. Prod</b></td>
+    </tr>
+    <tr>
+        <td>SLACK_API_TOKEN</td>
+        <td>Access Slack API</td>
+        <td>whoop-dev bot's token</td>
+    </tr>
+    <tr>
+        <td>SLACK_API_TOKEN_AWS</td>
+        <td>Access Slack API</td>
+        <td>whoop bot's token. When deploying, assign this value to
+        SLACK_API_TOKEN in the <code>.travis.yml</code> environment vars
+        </td>
+    </tr>
+    <tr>
+        <td>GITHUB_API_TOKEN</td>
+        <td>Access Github API</td>
+        <td>No difference</td>
+    </tr>
+    <tr>
+        <td>GITHUB_USERNAME</td>
+        <td>Access Github API</td>
+        <td>No difference</td>
+    </tr>
+    <tr>
+        <td>VERSION</td>
+        <td>Commit hash of latest bot code</td>
+        <td>Assigned dynamically in <code>deploy.bash</code>; set to 'Dev'
+        during development</td>
+    </tr>
+    <tr>
+        <td>DATADOG_API_KEY</td>
+        <td>Access Datadog API</td>
+        <td>No difference</td>
+    </tr>
+    <tr>
+        <td>DATADOG_APP_KEY</td>
+        <td>Access Datadog API</td>
+        <td>No difference</td>
+    </tr>
+    <tr>
+        <td>REFRESH_DATASTORE_INTERVAL_HOURS</td>
+        <td>Hours between refreshing all datastores. Currently is 24.</td>
+        <td>No difference</td>
+    </tr>
+    <tr>
+        <td>PAPERTRAIL_URL</td>
+        <td>Url to send console.log content to. Papertrail configured in
+        <code>ecs-task-template.mustache</code> and <code>makeTask.js</code></td>
+        <td>No difference</td>
+    </tr>
+</table>
