@@ -103,7 +103,7 @@ plugins must satisfy a few requirements:
     </tr>
     <tr>
         <td>PAPERTRAIL_URL</td>
-        <td>Url to send console.log content to. Papertrail configured in
+        <td>Url to send <code>console.log</code> content to. Papertrail configured in
         <code>ecs-task-template.mustache</code> and <code>makeTask.js</code></td>
         <td>No difference</td>
     </tr>
