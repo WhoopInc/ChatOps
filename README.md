@@ -67,7 +67,7 @@ plugins must satisfy a few requirements:
         <td>SLACK_API_TOKEN_AWS</td>
         <td>Access Slack API</td>
         <td>whoop bot's token. When deploying, assign this value to
-        SLACK_API_TOKEN in the `.travis.yml` environment vars
+        SLACK_API_TOKEN in the <code>.travis.yml</code> environment vars
         </td>
     </tr>
     <tr>
@@ -83,8 +83,8 @@ plugins must satisfy a few requirements:
     <tr>
         <td>VERSION</td>
         <td>Commit hash of latest bot code</td>
-        <td>Assigned dynamically in `deploy.bash`; set to 'Dev' during
-        development</td>
+        <td>Assigned dynamically in <code>deploy.bash</code>; set to 'Dev'
+        during development</td>
     </tr>
     <tr>
         <td>DATADOG_API_KEY</td>
@@ -104,7 +104,7 @@ plugins must satisfy a few requirements:
     <tr>
         <td>PAPERTRAIL_URL</td>
         <td>Url to send console.log content to. Papertrail configured in
-        `ecs-task-template.mustache` and `makeTask.js`</td>
+        <code>ecs-task-template.mustache</code> and <code>makeTask.js</code></td>
         <td>No difference</td>
     </tr>
 </table>
