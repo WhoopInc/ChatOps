@@ -74,28 +74,6 @@ function makeRequest (object, callback, responseCB, postData) {
         // convert postData from object to string, then write
         req.write(postData);
     }
-
-    req.on('close', function () {
-        console.log('RESPONSE CODE: ' + response.statusCode);
-        //console.log('ACCUMULATOR: ', accumulator);
-
-        // first assume accumulator is JSON object
-        var responseContent;
-        try {
-            responseContent = JSON.parse(accumulator);
-        }
-        catch (err) {
-            responseContent = accumulator;
-        }
-
-        callback(responseContent, response.statusCode);
-
-        if (responseCB) {
-            responseCB(response);
-        }
-
-    });
-
     req.end();
 }
 
