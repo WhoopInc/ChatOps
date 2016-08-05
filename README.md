@@ -11,6 +11,7 @@ commands. They are:
 *   `jenkins ([keyword]) list`; `jenkins [job_name] -p [KEY]=[value]`
 *   `chatops survey #[channel_name] [Q1] [A1] [A2]`
 *   `xkcd`
+*   lunch train (incomplete, not actually a plugin)
 
 
 ### Architecture ###
@@ -49,6 +50,15 @@ plugins must satisfy a few requirements:
     help descriptions when the `chatops help` command is called. The string
     should have the form `_[PLUGIN NAME]_\n[Explanation of plugin including
     invocation command and constraints]`
+
+
+### Notes on Lunch Train ###
+The Lunch Train feature is not a plugin, but a CronJob running from `index.js`.
+Currently, it is hard-coded to only blast to the #botdev channel, which the
+production bot is not a member of, resulting in no noticeable functionality.
+The simplest way to add a channel to the Lunch Train is to add the channel id
+to the array of channels that the lunch train is permitted to blast to. The bot
+must be a member of a channel in order to publish to it.
 
 
 ### Environment Variables ###
